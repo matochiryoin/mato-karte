@@ -89,12 +89,12 @@ function clearReferral() {
   document.getElementById('referral_patient_id').value = '';
   document.getElementById('referral_display').textContent = '未設定';
 }
-window.addEventListener('message', function (e) {
-  if (e.origin !== window.location.origin) return;
-  if (e.data && e.data.type === 'patient-picked') {
-    document.getElementById('referral_patient_id').value = e.data.id;
-    document.getElementById('referral_display').textContent = e.data.text;
-  }
+window.addEventListener('storage', function (e) {
+  if (e.key !== 'karte_referral_pick' || !e.newValue) return;
+  var data = JSON.parse(e.newValue);
+  document.getElementById('referral_patient_id').value = data.id;
+  document.getElementById('referral_display').textContent = data.text;
+  localStorage.removeItem('karte_referral_pick');
 });
 </script>
 {% endblock %}

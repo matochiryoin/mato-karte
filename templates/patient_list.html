@@ -43,13 +43,15 @@
 
 {% if picker %}
 <script>
+// window.opener経由のpostMessageはポップアップがタブとして開いた場合などに届かないことがあるため、
+// 同一オリジンの別タブに確実に伝わるlocalStorage + storageイベントで元の画面に伝える。
 document.querySelectorAll('[data-pick-id]').forEach(function (el) {
   el.addEventListener('click', function (e) {
     e.preventDefault();
-    if (window.opener) {
-      window.opener.postMessage({ type: 'patient-picked', id: this.dataset.pickId, text: this.dataset.pickText }, window.location.origin);
-    }
-    window.close();
+    localStorage.setItem('karte_referral_pick', JSON.stringify({
+      id: this.dataset.pickId, text: this.dataset.pickText, ts: Date.now()
+    }));
+    setTimeout(function () { window.close(); }, 50);
   });
 });
 </script>
