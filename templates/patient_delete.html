@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('patient_detail', patient_id=patient.id) }}">← {{ patient.full_name }} 様に戻る</a>
+<div class="card">
+  <h2>患者を削除しますか？</h2>
+  <p style="margin-top:0;">
+    <b>{{ patient.full_name }} 様</b>（No.{{ patient.chart_no }}）を削除します。<br>
+    カルテ {{ patient.visits | length }} 件、予約 {{ patient.reservations | length }} 件、会計履歴 {{ patient.sales | length }} 件も
+    まとめて削除され、<b>元に戻せません</b>。
+  </p>
+  <form method="post">
+    <div class="btn-row">
+      <button class="btn danger" type="submit">削除する</button>
+      <a class="btn secondary" href="{{ url_for('patient_detail', patient_id=patient.id) }}">削除しない</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

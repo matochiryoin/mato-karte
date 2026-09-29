@@ -24,6 +24,7 @@
   </dl>
   <div class="btn-row">
     <a class="btn secondary" href="{{ url_for('patient_edit', patient_id=patient.id) }}">患者情報を編集</a>
+    <a class="btn danger" href="{{ url_for('patient_delete', patient_id=patient.id) }}">患者を削除</a>
   </div>
 </div>
 

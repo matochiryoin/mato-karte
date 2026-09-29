@@ -1,31 +1,38 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="day-nav">
-  <a class="btn secondary" href="{{ url_for('report_monthly', month=prev_month.strftime('%Y-%m')) }}">◀</a>
-  <form method="get" class="date-form"><input type="month" name="month" value="{{ first.strftime('%Y-%m') }}" onchange="this.form.submit()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;"></form>
-  <a class="btn secondary" href="{{ url_for('report_monthly', month=next_month.strftime('%Y-%m')) }}">▶</a>
-</div>
-<div class="tabs">
-  <a class="active" href="{{ url_for('report_monthly', month=first.strftime('%Y-%m')) }}">月間集計</a>
-  <a href="{{ url_for('report_menu', month=first.strftime('%Y-%m')) }}">メニュー別</a>
-  <a href="{{ url_for('report_yearly', year=first.year) }}">年間集計</a>
-</div>
-<div class="day-title">{{ first.year }}年{{ first.month }}月　営業日別売上集計
-  <span class="counts">総売上 {{ "{:,}".format(totals.total) }}円 ／ {{ totals.count }}人</span></div>
-<div class="btn-row" style="margin:0 0 10px;">
-  <a class="btn secondary" href="{{ url_for('report_monthly_print', month=first.strftime('%Y-%m')) }}" target="_blank">PDFに書き出す</a>
-</div>
-<div class="table-wrap">
-  <table class="ledger">
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ first.year }}年{{ first.month }}月 営業日別売上集計｜まと治療院</title>
+<style>
+  body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; color: #222; max-width: 720px; margin: 20px auto; padding: 0 16px; }
+  h1 { font-size: 18px; margin-bottom: 2px; }
+  .shop { font-size: 13px; color: #555; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+  th, td { padding: 4px 6px; text-align: left; border-bottom: 1px solid #eee; }
+  th { border-bottom: 1px solid #999; font-weight: 600; background: #f7f6f1; }
+  td.num, th.num { text-align: right; }
+  tr.subtotal td { background: #f3f0ea; font-weight: 600; }
+  tfoot td { border-top: 2px solid #999; font-weight: 700; }
+  .noprint { text-align: center; margin: 18px 0; }
+  .noprint button { padding: 10px 20px; font-size: 15px; border-radius: 8px; border: 1px solid #1497a8; background: #1497a8; color: #fff; cursor: pointer; }
+  @media print { .noprint { display: none; } body { margin: 0; max-width: none; } }
+</style>
+</head>
+<body>
+  <h1>{{ first.year }}年{{ first.month }}月　営業日別売上集計</h1>
+  <div class="shop">まと治療院　総売上 {{ "{:,}".format(totals.total) }}円／{{ totals.count }}人</div>
+
+  <table>
     <thead><tr><th>日付</th><th>曜日</th><th class="num">総売上</th><th class="num">技術売上</th><th class="num">回数券売上</th>
       <th class="num">店販売上</th><th class="num">(値引)</th><th class="num">消費税</th><th class="num">客数</th></tr></thead>
     <tbody>
       {% for rows, block_totals in blocks %}
         {% for d, s in rows %}
         <tr>
-          <td><a href="{{ url_for('sales_ledger', date=d.isoformat()) }}">{{ d.month }}/{{ d.day }}</a></td>
+          <td>{{ d.month }}/{{ d.day }}</td>
           <td>{{ weekdays[d.weekday()] }}</td>
-          <td class="num"><b>{{ "{:,}".format(s.total) if s.count else '' }}</b></td>
+          <td class="num">{{ "{:,}".format(s.total) if s.count else '' }}</td>
           <td class="num">{{ "{:,}".format(s.tech) if s.count else '' }}</td>
           <td class="num">{{ "{:,}".format(s.ticket) if s.count else '' }}</td>
           <td class="num">{{ "{:,}".format(s.shop) if s.count else '' }}</td>
@@ -36,7 +43,7 @@
         {% endfor %}
         <tr class="subtotal">
           <td colspan="2">小計</td>
-          <td class="num"><b>{{ "{:,}".format(block_totals.total) }}</b></td>
+          <td class="num">{{ "{:,}".format(block_totals.total) }}</td>
           <td class="num">{{ "{:,}".format(block_totals.tech) }}</td>
           <td class="num">{{ "{:,}".format(block_totals.ticket) }}</td>
           <td class="num">{{ "{:,}".format(block_totals.shop) }}</td>
@@ -55,5 +62,10 @@
       <tr><td colspan="2">客単価</td><td class="num" colspan="7">{{ "{:,}".format(avg_per_customer) }}円</td></tr>
     </tfoot>
   </table>
-</div>
-{% endblock %}
+
+  <div class="noprint">
+    <button onclick="window.print()">PDFとして保存（印刷）</button>
+    <p style="font-size:12px;color:#888;">保存先で「PDFに保存」を選んでください</p>
+  </div>
+</body>
+</html>

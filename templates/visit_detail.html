@@ -26,6 +26,7 @@
     {% if visit.custom_field_2 %}<dt>オリジナル項目2</dt><dd>{{ visit.custom_field_2 }}</dd>{% endif %}
   </dl>
   <div class="btn-row">
+    <a class="btn" href="{{ url_for('sale_new', patient_id=patient.id, date=visit.visit_date.isoformat()) }}">お会計へ</a>
     <a class="btn secondary" href="{{ url_for('visit_edit', visit_id=visit.id) }}">編集する</a>
   </div>
 </div>

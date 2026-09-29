@@ -147,6 +147,23 @@ def patient_edit(patient_id):
     return render_template("patient_form.html", patient=patient, next_chart_no=None, **_patient_form_options())
 
 
+@app.route("/patients/<int:patient_id>/delete", methods=["GET", "POST"])
+def patient_delete(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if request.method == "POST":
+        name = patient.full_name
+        photo_files = [p.filename for v in patient.visits for p in v.photos]
+        db.session.delete(patient)
+        db.session.commit()
+        for filename in photo_files:
+            path = os.path.join(UPLOAD_DIR, filename)
+            if os.path.exists(path):
+                os.remove(path)
+        flash(f"{name} 様を削除しました")
+        return redirect(url_for("patient_list"))
+    return render_template("patient_delete.html", patient=patient)
+
+
 @app.route("/patients/<int:patient_id>/visits/new", methods=["GET", "POST"])
 def visit_new(patient_id):
     patient = Patient.query.get_or_404(patient_id)

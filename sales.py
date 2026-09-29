@@ -301,11 +301,7 @@ def register(app):
         nxt = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
         return first, nxt
 
-    @app.route("/reports/monthly")
-    def report_monthly():
-        """bonboneの「営業日別売上集計」に相当。10日ごとの小計と月合計・1日平均・客単価を出す
-        （客数の新規/再来/固定等の内訳、天気、目標達成率はまことさんの申告により対象外）。"""
-        first = _parse_month(request.args.get("month"))
+    def _monthly_report_data(first):
         start, end = _month_range(first)
         sales = Sale.query.filter(Sale.sale_date >= start, Sale.sale_date < end).all()
         per_day = defaultdict(list)
@@ -328,10 +324,27 @@ def register(app):
         totals = _sums(sales)
         avg_per_day = totals["total"] // len(days) if days else 0
         avg_per_customer = totals["total"] // totals["count"] if totals["count"] else 0
-        prev_month = (start - timedelta(days=1)).replace(day=1)
-        return render_template("report_monthly.html", first=first, blocks=blocks, totals=totals,
-                               avg_per_day=avg_per_day, avg_per_customer=avg_per_customer,
-                               weekdays=WEEKDAYS, prev_month=prev_month, next_month=end)
+        return dict(blocks=blocks, totals=totals, avg_per_day=avg_per_day, avg_per_customer=avg_per_customer,
+                    start=start, end=end)
+
+    @app.route("/reports/monthly")
+    def report_monthly():
+        """bonboneの「営業日別売上集計」に相当。10日ごとの小計と月合計・1日平均・客単価を出す
+        （客数の新規/再来/固定等の内訳、天気、目標達成率はまことさんの申告により対象外）。"""
+        first = _parse_month(request.args.get("month"))
+        data = _monthly_report_data(first)
+        prev_month = (data["start"] - timedelta(days=1)).replace(day=1)
+        return render_template("report_monthly.html", first=first, blocks=data["blocks"], totals=data["totals"],
+                               avg_per_day=data["avg_per_day"], avg_per_customer=data["avg_per_customer"],
+                               weekdays=WEEKDAYS, prev_month=prev_month, next_month=data["end"])
+
+    @app.route("/reports/monthly/print")
+    def report_monthly_print():
+        first = _parse_month(request.args.get("month"))
+        data = _monthly_report_data(first)
+        return render_template("report_monthly_print.html", first=first, blocks=data["blocks"],
+                               totals=data["totals"], avg_per_day=data["avg_per_day"],
+                               avg_per_customer=data["avg_per_customer"], weekdays=WEEKDAYS)
 
     @app.route("/reports/menu")
     def report_menu():
