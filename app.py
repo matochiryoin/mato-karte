@@ -95,7 +95,11 @@ def next_chart_no():
 @app.route("/")
 def patient_list():
     q = request.args.get("q", "").strip()
+    picker = request.args.get("picker") == "1"
+    exclude_id = request.args.get("exclude", type=int)
     query = Patient.query
+    if exclude_id:
+        query = query.filter(Patient.id != exclude_id)
     if q:
         like = f"%{q}%"
         query = query.filter(
@@ -114,7 +118,7 @@ def patient_list():
     patients = (query.order_by(Patient.last_name_kana, Patient.first_name_kana, Patient.id)
                 .offset((page - 1) * per_page).limit(per_page).all())
     return render_template("patient_list.html", patients=patients, q=q, page=page, total=total,
-                           pages=max((total + per_page - 1) // per_page, 1))
+                           pages=max((total + per_page - 1) // per_page, 1), picker=picker, exclude_id=exclude_id)
 
 
 PATIENT_TEXT_FIELDS = [
@@ -135,12 +139,9 @@ def _apply_patient_form(patient, form):
     patient.referral_memo = form.get("referral_memo", "").strip()
 
 
-def _patient_form_options(exclude_id=None):
-    query = Patient.query.order_by(Patient.last_name_kana, Patient.last_name)
-    if exclude_id:
-        query = query.filter(Patient.id != exclude_id)
+def _patient_form_options():
     return dict(gender_options=GENDER_OPTIONS, marital_options=MARITAL_OPTIONS,
-                blood_options=BLOOD_OPTIONS, contact_options=CONTACT_OPTIONS, referral_candidates=query.all())
+                blood_options=BLOOD_OPTIONS, contact_options=CONTACT_OPTIONS)
 
 
 @app.route("/patients/new", methods=["GET", "POST"])
@@ -169,8 +170,7 @@ def patient_edit(patient_id):
         db.session.commit()
         flash("患者情報を更新しました")
         return redirect(url_for("patient_detail", patient_id=patient.id))
-    return render_template("patient_form.html", patient=patient, next_chart_no=None,
-                           **_patient_form_options(exclude_id=patient.id))
+    return render_template("patient_form.html", patient=patient, next_chart_no=None, **_patient_form_options())
 
 
 @app.route("/patients/<int:patient_id>/delete", methods=["GET", "POST"])

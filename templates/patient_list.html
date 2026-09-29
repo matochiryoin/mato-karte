@@ -1,14 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
+{% if picker %}
+<div class="card" style="margin-bottom:10px;padding:10px 14px;font-size:13px;color:var(--text-mute);">紹介元にする患者を選んでください</div>
+{% endif %}
 <form class="search-row" method="get">
   <input type="text" name="q" value="{{ q }}" placeholder="名前・カナ・電話番号・カルテNoで検索">
+  {% if picker %}<input type="hidden" name="picker" value="1">{% endif %}
+  {% if exclude_id %}<input type="hidden" name="exclude" value="{{ exclude_id }}">{% endif %}
   <button class="btn" type="submit">検索</button>
 </form>
 
 <div class="card">
   {% if patients %}
     {% for p in patients %}
-      <a class="patient-item" href="{{ url_for('patient_detail', patient_id=p.id) }}">
+      {% if picker %}
+        <a class="patient-item" href="#" data-pick-id="{{ p.id }}" data-pick-text="{{ p.full_name }} 様（No.{{ p.chart_no }}）">
+      {% else %}
+        <a class="patient-item" href="{{ url_for('patient_detail', patient_id=p.id) }}">
+      {% endif %}
         <div>
           <div class="name">{{ p.full_name }}</div>
           <div class="sub">{{ p.full_name_kana }}{% if p.phone %} ・ {{ p.phone }}{% endif %}</div>
@@ -23,12 +32,26 @@
 
 {% if pages > 1 %}
 <div class="day-nav" style="justify-content:center;">
-  {% if page > 1 %}<a class="btn secondary" href="{{ url_for('patient_list', q=q, page=page - 1) }}">◀ 前へ</a>{% endif %}
+  {% if page > 1 %}<a class="btn secondary" href="{{ url_for('patient_list', q=q, page=page - 1, picker=1 if picker else none, exclude=exclude_id) }}">◀ 前へ</a>{% endif %}
   <span style="font-size:14px;color:var(--text-mute);">{{ page }} / {{ pages }} ページ（全{{ "{:,}".format(total) }}件）</span>
-  {% if page < pages %}<a class="btn secondary" href="{{ url_for('patient_list', q=q, page=page + 1) }}">次へ ▶</a>{% endif %}
+  {% if page < pages %}<a class="btn secondary" href="{{ url_for('patient_list', q=q, page=page + 1, picker=1 if picker else none, exclude=exclude_id) }}">次へ ▶</a>{% endif %}
 </div>
 {% else %}
 <div style="font-size:13px;color:var(--text-mute);margin-bottom:10px;">全{{ total }}件</div>
 {% endif %}
-<a class="btn" href="{{ url_for('patient_new') }}">＋ 新規患者を登録</a>
+{% if not picker %}<a class="btn" href="{{ url_for('patient_new') }}">＋ 新規患者を登録</a>{% endif %}
+
+{% if picker %}
+<script>
+document.querySelectorAll('[data-pick-id]').forEach(function (el) {
+  el.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (window.opener) {
+      window.opener.postMessage({ type: 'patient-picked', id: this.dataset.pickId, text: this.dataset.pickText }, window.location.origin);
+    }
+    window.close();
+  });
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -60,12 +60,16 @@
     <input type="text" name="occupation" value="{{ p.occupation or '' if p else '' }}">
 
     <label>紹介元</label>
-    <select name="referral_patient_id" data-patient-select>
-      <option value="">なし</option>
-      {% for c in referral_candidates %}
-        <option value="{{ c.id }}" {% if p and p.referral_patient_id == c.id %}selected{% endif %}>{{ c.full_name }}（{{ c.full_name_kana or "-" }}）No.{{ c.chart_no }}</option>
-      {% endfor %}
-    </select>
+    <input type="hidden" name="referral_patient_id" id="referral_patient_id" value="{{ p.referral_patient_id or '' if p else '' }}">
+    <div class="field-row" style="align-items:center;">
+      <div id="referral_display" style="align-self:center;">
+        {% if p and p.referral_patient %}{{ p.referral_patient.full_name }} 様（No.{{ p.referral_patient.chart_no }}）{% else %}未設定{% endif %}
+      </div>
+      <div class="btn-row" style="margin:0;">
+        <button type="button" class="btn secondary" onclick="pickReferral()">選ぶ</button>
+        <button type="button" class="btn secondary" onclick="clearReferral()">クリア</button>
+      </div>
+    </div>
     <label>紹介メモ</label>
     <input type="text" name="referral_memo" value="{{ p.referral_memo or '' if p else '' }}">
 
@@ -76,5 +80,21 @@
   </form>
 </div>
 <script src="{{ url_for('static', filename='postal_autofill.js') }}"></script>
-<script src="{{ url_for('static', filename='patient_filter.js') }}"></script>
+<script>
+function pickReferral() {
+  var url = "{{ url_for('patient_list') }}?picker=1{% if p %}&exclude={{ p.id }}{% endif %}";
+  window.open(url, 'patient_picker', 'width=480,height=700');
+}
+function clearReferral() {
+  document.getElementById('referral_patient_id').value = '';
+  document.getElementById('referral_display').textContent = '未設定';
+}
+window.addEventListener('message', function (e) {
+  if (e.origin !== window.location.origin) return;
+  if (e.data && e.data.type === 'patient-picked') {
+    document.getElementById('referral_patient_id').value = e.data.id;
+    document.getElementById('referral_display').textContent = e.data.text;
+  }
+});
+</script>
 {% endblock %}
