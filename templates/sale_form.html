@@ -36,6 +36,7 @@
       <span><b>前回来店</b> <span id="pi-visit">-</span></span>
       <span><b>性別</b> <span id="pi-gender">-</span></span>
     </div>
+    <div class="patient-info" id="ticket-info" hidden></div>
     <div class="field-row">
       <div><label>売上日</label><input type="date" name="sale_date" value="{{ sale_date.isoformat() }}" required></div>
       <div><label>担当</label>
@@ -117,14 +118,28 @@
 </template>
 <script>
 var PRODUCTS = {{ product_map | tojson }};
+var PATIENT_TICKETS = {{ patient_tickets | tojson }};
 function yen(n) { return n.toLocaleString('ja-JP') + '円'; }
 function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
 function showPatientInfo(select) {
   var o = select.selectedOptions[0], box = document.getElementById('patient-info');
-  if (!o || !o.value) { box.hidden = true; return; }
+  if (!o || !o.value) { box.hidden = true; showTicketInfo(null); return; }
   document.getElementById('pi-birth').textContent = o.dataset.birth || '不明';
   document.getElementById('pi-visit').textContent = o.dataset.lastVisit || '初回';
   document.getElementById('pi-gender').textContent = o.dataset.gender || '不明';
+  box.hidden = false;
+  showTicketInfo(o.value);
+}
+function showTicketInfo(patientId) {
+  var box = document.getElementById('ticket-info');
+  var tickets = patientId ? (PATIENT_TICKETS[patientId] || {}) : {};
+  var families = Object.keys(tickets);
+  if (!families.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.innerHTML = families.map(function (f) {
+    var n = tickets[f];
+    var color = n > 0 ? 'var(--text)' : '#c0392b';
+    return '<span><b>' + f + '回数券</b> <span style="color:' + color + ';font-weight:600;">残 ' + n + ' 回</span></span>';
+  }).join('');
   box.hidden = false;
 }
 function computeTotal() {

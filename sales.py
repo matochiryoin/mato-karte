@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
@@ -33,6 +34,33 @@ SEED_PRODUCTS = [
     ("RSHO ゴールドラベル 1000mg CBD", "店販", 17172, "内税"),
     ("アクティブリリーフロールオン 150mg", "店販", 3190, "内税"),
 ]
+
+
+# 「◯◯回数券（N回分）」の購入で+N、「回数券利用 ◯◯」の使用で-1する。
+# 商品名の付け方（SEED_PRODUCTSと同じ規則）に沿っていれば、新しく追加した回数券商品も自動で対象になる。
+TICKET_PRODUCT_RE = re.compile(r"^(.+?)回数券.*?(\d+)回")
+TICKET_USE_PREFIX = "回数券利用 "
+
+
+def all_patient_ticket_balances():
+    """全患者ぶんの回数券の残り回数（患者ID→種類→残数）。会計画面の患者選択でまとめて使うため、
+    患者ごとに調べるのではなく1回の集計クエリで計算する。"""
+    balances = defaultdict(lambda: defaultdict(int))
+    rows = (
+        db.session.query(Sale.patient_id, SaleLine.name, SaleLine.category, db.func.sum(SaleLine.quantity))
+        .join(SaleLine, SaleLine.sale_id == Sale.id)
+        .filter(db.or_(SaleLine.category == "回数券", SaleLine.name.like(f"{TICKET_USE_PREFIX}%")))
+        .group_by(Sale.patient_id, SaleLine.name, SaleLine.category)
+        .all()
+    )
+    for patient_id, name, category, qty in rows:
+        if category == "回数券":
+            m = TICKET_PRODUCT_RE.match(name)
+            if m:
+                balances[patient_id][m.group(1)] += int(m.group(2)) * qty
+        elif name.startswith(TICKET_USE_PREFIX):
+            balances[patient_id][name[len(TICKET_USE_PREFIX):]] -= qty
+    return {pid: dict(fam) for pid, fam in balances.items()}
 
 
 def seed_products():
@@ -98,6 +126,7 @@ def _sale_form_context(sale, patient_id, sale_date, staff, prefill_lines, reserv
         categories=PRODUCT_CATEGORIES, methods=PAYMENT_METHODS, sales_types=SALES_TYPES, tax_types=TAX_TYPES,
         prefill_lines=prefill_lines, reservation_id=reservation_id,
         product_map={p.name: dict(price=p.price, category=p.category, tax=p.tax_type) for p in Product.query.all()},
+        patient_tickets=all_patient_ticket_balances(),
     )
 
 
