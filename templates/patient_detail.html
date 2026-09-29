@@ -20,6 +20,8 @@
     {% if patient.occupation %}<dt>職業</dt><dd>{{ patient.occupation }}</dd>{% endif %}
     {% if patient.age_bracket %}<dt>年代</dt><dd>{{ patient.age_bracket }}</dd>{% endif %}
     {% if patient.visit_motivation %}<dt>来店動機</dt><dd>{{ patient.visit_motivation }}</dd>{% endif %}
+    {% if patient.referral_patient %}<dt>紹介元</dt><dd><a href="{{ url_for('patient_detail', patient_id=patient.referral_patient.id) }}">{{ patient.referral_patient.full_name }} 様（No.{{ patient.referral_patient.chart_no }}）</a></dd>{% endif %}
+    {% if patient.referral_memo %}<dt>紹介メモ</dt><dd>{{ patient.referral_memo }}</dd>{% endif %}
     {% if patient.memo %}<dt>メモ</dt><dd>{{ patient.memo }}</dd>{% endif %}
   </dl>
   <div class="btn-row">

@@ -36,7 +36,11 @@ class Patient(db.Model):
     bonbone_customer_id = db.Column(db.String(30))
     age_bracket = db.Column(db.String(10))
     visit_motivation = db.Column(db.String(200))
+    referral_patient_id = db.Column(db.Integer, db.ForeignKey("patients.id"))
+    referral_memo = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    referral_patient = db.relationship("Patient", remote_side=[id])
 
     @property
     def address(self):

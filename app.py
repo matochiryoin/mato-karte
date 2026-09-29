@@ -27,8 +27,26 @@ app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB
 db.init_app(app)
 app.jinja_env.filters["hm"] = fmt_min
 
+def _migrate_schema():
+    """モデルにカラムを追加した時、既存のDBにも自動で ALTER TABLE ADD COLUMN する。
+    列を追加するだけで、削除・変更はしない（安全に自動実行できる範囲に留める）。"""
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    existing_tables = set(inspector.get_table_names())
+    with db.engine.begin() as conn:
+        for table in db.metadata.tables.values():
+            if table.name not in existing_tables:
+                continue
+            existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
+            for col in table.columns:
+                if col.name not in existing_cols:
+                    col_type = col.type.compile(db.engine.dialect)
+                    conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}'))
+
+
 with app.app_context():
     db.create_all()
+    _migrate_schema()
     seed_products()
 
 register_sales(app)
@@ -111,11 +129,18 @@ def _apply_patient_form(patient, form):
         setattr(patient, f, form.get(f, "").strip())
     birth = form.get("birth_date")
     patient.birth_date = datetime.strptime(birth, "%Y-%m-%d").date() if birth else None
+    referral_id = form.get("referral_patient_id", "").strip()
+    referral_id = int(referral_id) if referral_id.isdigit() else None
+    patient.referral_patient_id = referral_id if referral_id != patient.id else None
+    patient.referral_memo = form.get("referral_memo", "").strip()
 
 
-def _patient_form_options():
+def _patient_form_options(exclude_id=None):
+    query = Patient.query.order_by(Patient.last_name_kana, Patient.last_name)
+    if exclude_id:
+        query = query.filter(Patient.id != exclude_id)
     return dict(gender_options=GENDER_OPTIONS, marital_options=MARITAL_OPTIONS,
-                blood_options=BLOOD_OPTIONS, contact_options=CONTACT_OPTIONS)
+                blood_options=BLOOD_OPTIONS, contact_options=CONTACT_OPTIONS, referral_candidates=query.all())
 
 
 @app.route("/patients/new", methods=["GET", "POST"])
@@ -144,7 +169,8 @@ def patient_edit(patient_id):
         db.session.commit()
         flash("患者情報を更新しました")
         return redirect(url_for("patient_detail", patient_id=patient.id))
-    return render_template("patient_form.html", patient=patient, next_chart_no=None, **_patient_form_options())
+    return render_template("patient_form.html", patient=patient, next_chart_no=None,
+                           **_patient_form_options(exclude_id=patient.id))
 
 
 @app.route("/patients/<int:patient_id>/delete", methods=["GET", "POST"])

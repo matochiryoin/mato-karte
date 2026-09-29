@@ -59,6 +59,16 @@
     <label>職業</label>
     <input type="text" name="occupation" value="{{ p.occupation or '' if p else '' }}">
 
+    <label>紹介元</label>
+    <select name="referral_patient_id" data-patient-select>
+      <option value="">なし</option>
+      {% for c in referral_candidates %}
+        <option value="{{ c.id }}" {% if p and p.referral_patient_id == c.id %}selected{% endif %}>{{ c.full_name }}（{{ c.full_name_kana or "-" }}）No.{{ c.chart_no }}</option>
+      {% endfor %}
+    </select>
+    <label>紹介メモ</label>
+    <input type="text" name="referral_memo" value="{{ p.referral_memo or '' if p else '' }}">
+
     <label>患者メモ（アレルギー・既往歴など）</label>
     <textarea name="memo">{{ p.memo or '' if p else '' }}</textarea>
 
@@ -66,4 +76,5 @@
   </form>
 </div>
 <script src="{{ url_for('static', filename='postal_autofill.js') }}"></script>
+<script src="{{ url_for('static', filename='patient_filter.js') }}"></script>
 {% endblock %}
