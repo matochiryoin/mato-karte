@@ -55,7 +55,7 @@
              title="{{ t | hm }}"></a>
         {% endfor %}
         {% for r in items %}
-          <a class="g-res {{ 'visited' if r.status == '来院' or r.paid }}"
+          <a class="g-res {{ 'paid' if r.paid else ('visited' if r.status == '来院') }}"
              style="left: calc(var(--slot) * {{ (r.start_min - start) // slot_min }}); width: calc(var(--slot) * {{ (r.end_min - r.start_min) // slot_min }});"
              href="{{ url_for('reservation_detail', reservation_id=r.id) }}">
             <span class="n">{{ r.patient.full_name }} 様</span>

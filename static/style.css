@@ -324,6 +324,7 @@ header.topbar .mobile-nav a { color: var(--brand); text-decoration: none; font-s
   border-radius: 6px; padding: 5px 6px; font-size: 12px; text-decoration: none; overflow: hidden;
   display: flex; flex-direction: column; gap: 3px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 .g-res.visited { background: #7a8f8f; }
+.g-res.paid { background: #9aa0a6; }
 .g-res .n { font-weight: 600; line-height: 1.2; }
 .g-res .tags { white-space: nowrap; }
 .g-res .tags i { font-style: normal; font-size: 10px; background: rgba(255,255,255,.28); padding: 1px 5px;

@@ -121,11 +121,15 @@ def register(app):
             tax=sum(s.tax for s in sales), total=sum(s.total for s in sales),
         )
         by_method = defaultdict(int)
+        payments_by_sale = {}
         for s in sales:
+            payments_by_sale[s.id] = defaultdict(int)
             for p in s.payments:
                 by_method[p.method] += p.amount
+                payments_by_sale[s.id][p.method] += p.amount
         return render_template("sales_ledger.html", day=day, tab=tab, sales=sales, totals=totals,
-                               by_method=by_method, weekdays=WEEKDAYS, today=date.today(),
+                               by_method=by_method, payments_by_sale=payments_by_sale, payment_methods=PAYMENT_METHODS,
+                               weekdays=WEEKDAYS, today=date.today(),
                                prev_day=day - timedelta(days=1), next_day=day + timedelta(days=1))
 
     @app.route("/sales/new", methods=["GET", "POST"])

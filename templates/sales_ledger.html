@@ -41,17 +41,23 @@
 {% else %}
 <div class="table-wrap">
   <table class="ledger">
-    <thead><tr><th>患者名</th><th>入金方法</th><th class="num">金額</th></tr></thead>
+    <thead><tr><th>患者名</th><th>担当</th>{% for m in payment_methods %}<th class="num">{{ m }}</th>{% endfor %}<th class="num">入金計</th></tr></thead>
     <tbody>
-      {% for s in sales %}{% for p in s.payments %}
-      <tr><td><a href="{{ url_for('sale_detail', sale_id=s.id) }}">{{ s.patient.full_name }} 様</a></td><td>{{ p.method }}</td><td class="num">{{ "{:,}".format(p.amount) }}</td></tr>
-      {% endfor %}{% else %}
-      <tr><td colspan="3" class="empty">この日の入金はありません</td></tr>
+      {% for s in sales %}
+      <tr>
+        <td><a href="{{ url_for('sale_detail', sale_id=s.id) }}"><b>{{ s.patient.full_name }} 様</b></a><div class="chart-no">No.{{ s.patient.chart_no }}</div></td>
+        <td>{{ s.staff }}{% if s.nominated %} <span class="status New">指名</span>{% endif %}</td>
+        {% for m in payment_methods %}<td class="num">{{ "{:,}".format(payments_by_sale[s.id].get(m, 0)) }}</td>{% endfor %}
+        <td class="num"><b>{{ "{:,}".format(s.paid_total) }}</b></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ payment_methods | length + 3 }}" class="empty">この日の入金はありません</td></tr>
       {% endfor %}
     </tbody>
     <tfoot>
-      {% for m, amt in by_method.items() %}<tr><td>{{ m }}計</td><td></td><td class="num">{{ "{:,}".format(amt) }}</td></tr>{% endfor %}
-      <tr><td>入金合計</td><td></td><td class="num">{{ "{:,}".format(by_method.values() | sum) }}</td></tr>
+      <tr><td>{{ sales | length }} 件</td><td></td>
+        {% for m in payment_methods %}<td class="num">{{ "{:,}".format(by_method.get(m, 0)) }}</td>{% endfor %}
+        <td class="num">{{ "{:,}".format(by_method.values() | sum) }}</td></tr>
     </tfoot>
   </table>
 </div>
