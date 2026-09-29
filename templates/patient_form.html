@@ -26,13 +26,13 @@
     </div>
 
     <label>郵便番号</label>
-    <input type="text" name="postal_code" value="{{ p.postal_code or '' if p else '' }}" inputmode="numeric">
+    <input type="text" id="postal_code" name="postal_code" value="{{ p.postal_code or '' if p else '' }}" inputmode="numeric" placeholder="1234567（ハイフン無しで住所が自動入力されます）">
     <div class="field-row">
-      <div><label>都道府県名</label><input type="text" name="prefecture" value="{{ p.prefecture or '' if p else '' }}"></div>
-      <div><label>市区郡名</label><input type="text" name="city" value="{{ p.city or '' if p else '' }}"></div>
+      <div><label>都道府県名</label><input type="text" id="prefecture" name="prefecture" value="{{ p.prefecture or '' if p else '' }}"></div>
+      <div><label>市区郡名</label><input type="text" id="city" name="city" value="{{ p.city or '' if p else '' }}"></div>
     </div>
     <label>町村名</label>
-    <input type="text" name="town" value="{{ p.town or '' if p else '' }}">
+    <input type="text" id="town" name="town" value="{{ p.town or '' if p else '' }}">
     <label>番地</label>
     <input type="text" name="street" value="{{ p.street or '' if p else '' }}">
     <label>建物名</label>
@@ -65,4 +65,5 @@
     <div class="btn-row"><button class="btn" type="submit">保存</button></div>
   </form>
 </div>
+<script src="{{ url_for('static', filename='postal_autofill.js') }}"></script>
 {% endblock %}
