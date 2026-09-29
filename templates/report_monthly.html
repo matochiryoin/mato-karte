@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="day-nav">
+  <a class="btn secondary" href="{{ url_for('report_monthly', month=prev_month.strftime('%Y-%m')) }}">◀</a>
+  <form method="get" class="date-form"><input type="month" name="month" value="{{ first.strftime('%Y-%m') }}" onchange="this.form.submit()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;"></form>
+  <a class="btn secondary" href="{{ url_for('report_monthly', month=next_month.strftime('%Y-%m')) }}">▶</a>
+</div>
+<div class="tabs">
+  <a class="active" href="{{ url_for('report_monthly', month=first.strftime('%Y-%m')) }}">月間集計</a>
+  <a href="{{ url_for('report_menu', month=first.strftime('%Y-%m')) }}">メニュー別</a>
+  <a href="{{ url_for('report_yearly', year=first.year) }}">年間集計</a>
+</div>
+<div class="day-title">{{ first.year }}年{{ first.month }}月　営業日別売上集計
+  <span class="counts">総売上 {{ "{:,}".format(totals.total) }}円 ／ {{ totals.count }}人</span></div>
+<div class="table-wrap">
+  <table class="ledger">
+    <thead><tr><th>日付</th><th>曜日</th><th class="num">総売上</th><th class="num">技術売上</th><th class="num">回数券売上</th>
+      <th class="num">店販売上</th><th class="num">(値引)</th><th class="num">消費税</th><th class="num">客数</th></tr></thead>
+    <tbody>
+      {% for rows, block_totals in blocks %}
+        {% for d, s in rows %}
+        <tr>
+          <td><a href="{{ url_for('sales_ledger', date=d.isoformat()) }}">{{ d.month }}/{{ d.day }}</a></td>
+          <td>{{ weekdays[d.weekday()] }}</td>
+          <td class="num"><b>{{ "{:,}".format(s.total) if s.count else '' }}</b></td>
+          <td class="num">{{ "{:,}".format(s.tech) if s.count else '' }}</td>
+          <td class="num">{{ "{:,}".format(s.ticket) if s.count else '' }}</td>
+          <td class="num">{{ "{:,}".format(s.shop) if s.count else '' }}</td>
+          <td class="num">{{ "{:,}".format(s.discount) if s.count else '' }}</td>
+          <td class="num">{{ "(" ~ "{:,}".format(s.tax) ~ ")" if s.count else '' }}</td>
+          <td class="num">{{ s.count or '' }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="subtotal">
+          <td colspan="2">小計</td>
+          <td class="num"><b>{{ "{:,}".format(block_totals.total) }}</b></td>
+          <td class="num">{{ "{:,}".format(block_totals.tech) }}</td>
+          <td class="num">{{ "{:,}".format(block_totals.ticket) }}</td>
+          <td class="num">{{ "{:,}".format(block_totals.shop) }}</td>
+          <td class="num">{{ "{:,}".format(block_totals.discount) }}</td>
+          <td class="num">({{ "{:,}".format(block_totals.tax) }})</td>
+          <td class="num">{{ block_totals.count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="2">合計</td><td class="num">{{ "{:,}".format(totals.total) }}</td><td class="num">{{ "{:,}".format(totals.tech) }}</td>
+        <td class="num">{{ "{:,}".format(totals.ticket) }}</td><td class="num">{{ "{:,}".format(totals.shop) }}</td>
+        <td class="num">{{ "{:,}".format(totals.discount) }}</td><td class="num">({{ "{:,}".format(totals.tax) }})</td>
+        <td class="num">{{ totals.count }}</td></tr>
+      <tr><td colspan="2">1日平均売上</td><td class="num" colspan="7">{{ "{:,}".format(avg_per_day) }}円</td></tr>
+      <tr><td colspan="2">客単価</td><td class="num" colspan="7">{{ "{:,}".format(avg_per_customer) }}円</td></tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}

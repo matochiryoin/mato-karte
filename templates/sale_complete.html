@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2 style="text-align:center;">お会計完了</h2>
+  <div class="complete-summary">
+    <div><span class="label">お預かり額</span><span class="amt">{{ "{:,}".format(sale.tendered if sale.tendered is not none else cash_paid) }}円</span></div>
+    <div><span class="label">ご請求額</span><span class="amt">{{ "{:,}".format(sale.total) }}円</span></div>
+    <div><span class="label">おつり</span><span class="amt">{{ "{:,}".format(sale.change) }}円</span></div>
+  </div>
+  <div class="btn-row" style="justify-content:center;">
+    <a class="btn secondary" href="{{ url_for('sale_receipt', sale_id=sale.id) }}" target="_blank">レシート印刷</a>
+    <a class="btn secondary" href="{{ url_for('sale_invoice', sale_id=sale.id) }}" target="_blank">領収書発行</a>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:12px;">会計時顧客情報　{{ sale.patient.full_name }} 様</h3>
+  <form method="post" id="complete-form">
+    <label>患者様の性別</label>
+    <div class="chip-group">
+      {% for g in gender_options %}
+        <input type="radio" class="chip-input" name="gender" value="{{ g }}" id="g-{{ loop.index }}"
+          {% if (sale.patient.gender or '不明') == g %}checked{% endif %}>
+        <label class="chip" for="g-{{ loop.index }}">{{ g }}</label>
+      {% endfor %}
+    </div>
+
+    <label>患者様の年代</label>
+    <div class="chip-group">
+      {% for a in age_brackets %}
+        <input type="radio" class="chip-input" name="age_bracket" value="{{ a }}" id="a-{{ loop.index }}"
+          {% if sale.patient.age_bracket == a %}checked{% endif %}>
+        <label class="chip" for="a-{{ loop.index }}">{{ a }}</label>
+      {% endfor %}
+    </div>
+
+    <label>来店動機</label>
+    <input type="text" name="visit_motivation" value="{{ sale.patient.visit_motivation or '' }}" placeholder="例：紹介、Web検索など">
+
+    <div class="btn-row">
+      <button class="btn" type="submit" style="flex:1;">完了</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="day-nav">
+  <a class="btn secondary" href="{{ url_for('reservation_graph', date=prev_day.isoformat()) }}">前日</a>
+  <a class="btn secondary" href="{{ url_for('reservation_graph', date=today.isoformat()) }}">今日</a>
+  <form method="get" class="date-form">
+    <input type="date" name="date" value="{{ day.isoformat() }}" onchange="this.form.submit()">
+  </form>
+</div>
+<div class="quick-days">
+  {% for d in quick_days %}
+    <a class="quick-day {% if d.weekday() == 6 %}sun{% elif d.weekday() == 5 %}sat{% endif %}"
+       href="{{ url_for('reservation_graph', date=d.isoformat()) }}">{{ d.month }}/{{ d.day }} ({{ weekdays[d.weekday()] }})</a>
+  {% endfor %}
+</div>
+
+<div class="day-title">{{ day.strftime("%Y/%m/%d") }}（{{ weekdays[day.weekday()] }}）
+  <span class="counts">予約 {{ count_active }}人 ／ 来院 {{ count_visited }}人 ／ 会計済 {{ count_paid }}人</span>
+</div>
+
+<div class="graph-scroll">
+  <div class="graph" style="--slot: 40px;">
+    <div class="g-row">
+      <div class="g-label"></div>
+      <div class="g-track g-head">
+        {% for h in hours %}<div class="g-hour">{{ h | hm }}</div>{% endfor %}
+      </div>
+    </div>
+    <div class="g-row">
+      <div class="g-label">お店の予定</div>
+      <div class="g-track">
+        {% for i in range(slots) %}
+          {% set t = start + i * slot_min %}
+          <a class="g-slot {% if (t - start) % 60 == 0 %}hour{% endif %}"
+             href="{{ url_for('store_schedule_new', date=day.isoformat(), time=t) }}"
+             title="{{ t | hm }}"></a>
+        {% endfor %}
+        {% for s in store_schedules %}
+          <a class="g-res g-store" style="left: calc(var(--slot) * {{ (s.start_min - start) // slot_min }});
+             width: calc(var(--slot) * {{ (s.end_min - s.start_min) // slot_min }}); background: {{ s.color }};"
+             href="{{ url_for('store_schedule_edit', schedule_id=s.id) }}">
+            <span class="n">{{ s.message or "予定" }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% for staff, items in by_staff.items() %}
+    <div class="g-row">
+      <div class="g-label">{{ staff }}</div>
+      <div class="g-track">
+        {% for i in range(slots) %}
+          {% set t = start + i * slot_min %}
+          <a class="g-slot {% if (t - start) % 60 == 0 %}hour{% endif %}"
+             href="{{ url_for('reservation_new', date=day.isoformat(), time=t, staff=staff) }}"
+             title="{{ t | hm }}"></a>
+        {% endfor %}
+        {% for r in items %}
+          <a class="g-res {{ 'visited' if r.status == '来院' or r.paid }}"
+             style="left: calc(var(--slot) * {{ (r.start_min - start) // slot_min }}); width: calc(var(--slot) * {{ (r.end_min - r.start_min) // slot_min }});"
+             href="{{ url_for('reservation_detail', reservation_id=r.id) }}">
+            <span class="n">{{ r.patient.full_name }} 様</span>
+            <span class="tags">{% if r.is_new_patient %}<i>New</i>{% endif %}{% if r.nominated %}<i>指名</i>{% endif %}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h2>この日の予約</h2>
+  {% if reservations %}
+    {% for r in reservations %}
+      <a class="visit-item" href="{{ url_for('reservation_detail', reservation_id=r.id) }}">
+        <div class="date">{{ r.time_range }}　{{ r.patient.full_name }} 様
+          {% if r.status != '予約' %}<span class="status {{ r.status }}">{{ r.status }}</span>{% endif %}{% if r.paid %}<span class="status 会計済">会計済</span>{% endif %}</div>
+        <div class="summary">{{ r.staff }}{% if r.nominated %}・指名{% endif %}{% if r.memo %}・{{ r.memo }}{% endif %}</div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">予約はありません。グラフの空き枠をタップして入力できます</div>
+  {% endif %}
+</div>
+
+<div class="btn-row" style="margin-top:0;">
+  <a class="btn" href="{{ url_for('reservation_new', date=day.isoformat()) }}">＋ 予約入力</a>
+  <a class="btn secondary" href="{{ url_for('store_schedule_new', date=day.isoformat()) }}">＋ お店の予定を追加</a>
+</div>
+{% endblock %}

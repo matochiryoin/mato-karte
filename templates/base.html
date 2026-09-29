@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}まと治療院 電子カルテ{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('patient_list') }}"><span class="brand-mark">M</span>まと治療院 電子カルテ</a>
+    <nav class="mobile-nav">
+      <a href="{{ url_for('reservation_graph') }}">予約</a>
+      <a href="{{ url_for('sales_ledger') }}">売上</a>
+      <a href="{{ url_for('report_monthly') }}">集計</a>
+      <a href="{{ url_for('patient_list') }}">患者</a>
+    </nav>
+  </header>
+  <div class="shell">
+    {% set ep = request.endpoint %}
+    <aside class="sidebar">
+      <div class="side-section">
+        <div class="side-heading">日常業務</div>
+        <a class="side-item {{ 'active' if ep == 'reservation_graph' }}" href="{{ url_for('reservation_graph') }}">
+          <span class="side-icon icon-orange">{% include "icons/calendar.svg" %}</span>予約グラフ</a>
+        <a class="side-item {{ 'active' if ep in ('reservation_new', 'reservation_edit', 'reservation_detail') }}" href="{{ url_for('reservation_new') }}">
+          <span class="side-icon icon-orange">{% include "icons/edit.svg" %}</span>予約入力</a>
+        <a class="side-item {{ 'active' if ep in ('patient_list', 'patient_detail', 'patient_new', 'patient_edit', 'visit_new', 'visit_edit', 'visit_detail') }}" href="{{ url_for('patient_list') }}">
+          <span class="side-icon icon-blue">{% include "icons/person.svg" %}</span>患者情報</a>
+        <a class="side-item {{ 'active' if ep in ('sale_new', 'sale_edit', 'sale_detail') }}" href="{{ url_for('sale_new') }}">
+          <span class="side-icon icon-green">{% include "icons/yen.svg" %}</span>お会計</a>
+        <a class="side-item {{ 'active' if ep == 'sales_ledger' }}" href="{{ url_for('sales_ledger') }}">
+          <span class="side-icon icon-green">{% include "icons/ledger.svg" %}</span>売上台帳</a>
+      </div>
+      <div class="side-section">
+        <div class="side-heading">データ活用</div>
+        <a class="side-item {{ 'active' if ep == 'report_monthly' }}" href="{{ url_for('report_monthly') }}">
+          <span class="side-icon icon-teal">{% include "icons/chart.svg" %}</span>月間集計</a>
+        <a class="side-item {{ 'active' if ep == 'report_menu' }}" href="{{ url_for('report_menu') }}">
+          <span class="side-icon icon-teal">{% include "icons/list.svg" %}</span>メニュー別</a>
+        <a class="side-item {{ 'active' if ep == 'report_yearly' }}" href="{{ url_for('report_yearly') }}">
+          <span class="side-icon icon-teal">{% include "icons/calendar-stack.svg" %}</span>年間集計</a>
+      </div>
+      <div class="side-section">
+        <div class="side-heading">設定</div>
+        <a class="side-item {{ 'active' if ep in ('products', 'product_update') }}" href="{{ url_for('products') }}">
+          <span class="side-icon icon-purple">{% include "icons/gear.svg" %}</span>商品・メニュー</a>
+        <form method="post" action="{{ url_for('logout') }}" style="padding:6px 16px 0;">
+          <button type="submit" class="back-link" style="background:none;border:none;padding:0;cursor:pointer;font-size:13.5px;">ログアウト</button>
+        </form>
+      </div>
+    </aside>
+    <main>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for m in messages %}
+            <div class="flash">{{ m }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

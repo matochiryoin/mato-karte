@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('reservation_graph', date=day.isoformat()) }}">← 予約グラフに戻る</a>
+<div class="card">
+  <h2>{{ "お店の予定の編集" if schedule else "お店の予定を追加" }}</h2>
+  <form method="post">
+    <label>日付</label>
+    <input type="date" name="schedule_date" value="{{ day.isoformat() }}" required>
+
+    <div class="field-row">
+      <div>
+        <label>開始時刻</label>
+        <select name="start_min">
+          {% for t in time_options %}<option value="{{ t }}" {% if t == start_min %}selected{% endif %}>{{ t | hm }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>終了時刻</label>
+        <select name="end_min">
+          {% for t in time_options %}<option value="{{ t }}" {% if t == end_min %}selected{% endif %}>{{ t | hm }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <label>メッセージ</label>
+    <input type="text" name="message" id="message" value="{{ schedule.message or '' if schedule else '' }}" placeholder="例：夏休み、休診日、研修">
+
+    <label>色</label>
+    <input type="color" name="color" id="color" value="{{ schedule.color if schedule else '#ef9245' }}" style="height:44px;padding:4px;">
+
+    {% if templates %}
+    <label>テンプレートから選ぶ</label>
+    <div class="chip-group">
+      {% for t in templates %}
+        <button type="button" class="chip" style="border-color:{{ t.color }};background:{{ t.color }}22;"
+          onclick="document.getElementById('message').value='{{ t.label }}'; document.getElementById('color').value='{{ t.color }}';">{{ t.label }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div style="margin-top:6px;"><a class="back-link" href="{{ url_for('store_schedule_templates') }}">テンプレートを管理する</a></div>
+
+    <div class="btn-row">
+      <button class="btn" type="submit">保存</button>
+      {% if schedule %}
+      <button class="btn danger" type="submit" formaction="{{ url_for('store_schedule_delete', schedule_id=schedule.id) }}" onclick="return confirm('この予定を削除します。よろしいですか？')">削除</button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

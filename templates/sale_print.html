@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ doc_title }}｜まと治療院</title>
+<style>
+  body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; color: #222; max-width: 420px; margin: 20px auto; padding: 0 16px; }
+  h1 { text-align: center; font-size: 20px; letter-spacing: .3em; margin-bottom: 4px; }
+  .shop { text-align: center; font-size: 13px; color: #555; margin-bottom: 18px; }
+  .meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
+  .to { font-size: 17px; font-weight: 700; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 10px; }
+  th, td { padding: 5px 2px; text-align: left; }
+  th { border-bottom: 1px solid #999; font-weight: 500; }
+  td.num, th.num { text-align: right; }
+  tfoot td { border-top: 1px solid #999; padding-top: 8px; }
+  .grand { font-size: 20px; font-weight: 700; text-align: right; margin: 10px 0; }
+  .note { font-size: 13px; margin: 14px 0; }
+  .stamp-area { text-align: right; font-size: 12px; color: #888; height: 60px; }
+  .noprint { text-align: center; margin-top: 22px; }
+  .noprint button { padding: 10px 20px; font-size: 15px; border-radius: 8px; border: 1px solid #1497a8; background: #1497a8; color: #fff; cursor: pointer; }
+  @media print { .noprint { display: none; } }
+</style>
+</head>
+<body>
+  <h1>{{ doc_title }}</h1>
+  <div class="shop">まと治療院</div>
+  <div class="meta"><span>{{ sale.sale_date.strftime("%Y年%m月%d日") }}</span><span>No.{{ sale.patient.chart_no }}</span></div>
+  <div class="to">{{ sale.patient.full_name }} 様</div>
+
+  {% if is_receipt %}
+    <div class="grand">¥{{ "{:,}".format(sale.total) }}-</div>
+    <div class="note">但し　施術代として上記正に領収いたしました。</div>
+    <table>
+      <tbody>
+        <tr><td>内訳</td><td class="num">{{ "{:,}".format(sale.total - sale.tax) }}円</td></tr>
+        <tr><td>消費税（10%）</td><td class="num">{{ "{:,}".format(sale.tax) }}円</td></tr>
+      </tbody>
+    </table>
+    <div class="stamp-area">まと治療院　印</div>
+  {% else %}
+    <table>
+      <thead><tr><th>商品名</th><th class="num">数量</th><th class="num">金額</th></tr></thead>
+      <tbody>
+        {% for l in sale.lines %}
+        <tr><td>{{ l.name }}</td><td class="num">{{ l.quantity }}</td><td class="num">{{ "{:,}".format(l.amount) }}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="2">値引計</td><td class="num">{{ "{:,}".format(sale.discount_total) }}</td></tr>
+        <tr><td colspan="2">消費税</td><td class="num">{{ "{:,}".format(sale.tax) }}</td></tr>
+      </tfoot>
+    </table>
+    <div class="grand">合計 ¥{{ "{:,}".format(sale.total) }}</div>
+    {% for p in sale.payments %}
+      <div class="meta"><span>{{ p.method }}</span><span>¥{{ "{:,}".format(p.amount) }}</span></div>
+    {% endfor %}
+    {% if sale.tendered is not none %}
+      <div class="meta"><span>お預かり</span><span>¥{{ "{:,}".format(sale.tendered) }}</span></div>
+      <div class="meta"><span>おつり</span><span>¥{{ "{:,}".format(sale.change) }}</span></div>
+    {% endif %}
+  {% endif %}
+
+  <div class="noprint"><button onclick="window.print()">印刷する</button></div>
+</body>
+</html>

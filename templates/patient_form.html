@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% macro chips(name, options, current) %}
+  <div class="chip-group">
+    {% for opt in options %}
+      <input type="radio" class="chip-input" name="{{ name }}" value="{{ opt }}" id="{{ name }}-{{ loop.index }}" {% if current == opt %}checked{% endif %}>
+      <label class="chip" for="{{ name }}-{{ loop.index }}">{{ opt }}</label>
+    {% endfor %}
+  </div>
+{% endmacro %}
+{% block content %}
+{% set p = patient %}
+<a class="back-link" href="{{ p and url_for('patient_detail', patient_id=p.id) or url_for('patient_list') }}">← 戻る</a>
+<div class="card">
+  <h2>{{ p and "患者情報の編集" or "新規患者登録" }}</h2>
+  <form method="post">
+    <label>カルテNo</label>
+    <input type="text" name="chart_no" value="{{ p.chart_no if p else next_chart_no }}" {% if p %}disabled{% endif %}>
+
+    <div class="field-row">
+      <div><label>姓</label><input type="text" name="last_name" value="{{ p.last_name if p else '' }}" required></div>
+      <div><label>名</label><input type="text" name="first_name" value="{{ p.first_name if p else '' }}" required></div>
+    </div>
+    <div class="field-row">
+      <div><label>セイ</label><input type="text" name="last_name_kana" value="{{ p.last_name_kana or '' if p else '' }}"></div>
+      <div><label>メイ</label><input type="text" name="first_name_kana" value="{{ p.first_name_kana or '' if p else '' }}"></div>
+    </div>
+
+    <label>郵便番号</label>
+    <input type="text" name="postal_code" value="{{ p.postal_code or '' if p else '' }}" inputmode="numeric">
+    <div class="field-row">
+      <div><label>都道府県名</label><input type="text" name="prefecture" value="{{ p.prefecture or '' if p else '' }}"></div>
+      <div><label>市区郡名</label><input type="text" name="city" value="{{ p.city or '' if p else '' }}"></div>
+    </div>
+    <label>町村名</label>
+    <input type="text" name="town" value="{{ p.town or '' if p else '' }}">
+    <label>番地</label>
+    <input type="text" name="street" value="{{ p.street or '' if p else '' }}">
+    <label>建物名</label>
+    <input type="text" name="building" value="{{ p.building or '' if p else '' }}">
+
+    <div class="field-row">
+      <div><label>携帯番号</label><input type="tel" name="mobile" value="{{ p.mobile or '' if p else '' }}"></div>
+      <div><label>電話番号</label><input type="tel" name="phone" value="{{ p.phone or '' if p else '' }}"></div>
+    </div>
+    <label>どちらをよく使われますか？</label>
+    {{ chips("preferred_contact", contact_options, p.preferred_contact if p else "") }}
+    <label>メールアドレス</label>
+    <input type="text" name="email" value="{{ p.email or '' if p else '' }}" inputmode="email">
+
+    <label>性別</label>
+    {{ chips("gender", gender_options, p.gender if p else "") }}
+    <label>既婚区分</label>
+    {{ chips("marital_status", marital_options, p.marital_status if p else "") }}
+    <label>血液型</label>
+    {{ chips("blood_type", blood_options, p.blood_type if p else "") }}
+
+    <label>生年月日</label>
+    <input type="date" name="birth_date" value="{{ p.birth_date.isoformat() if p and p.birth_date else '' }}">
+    <label>職業</label>
+    <input type="text" name="occupation" value="{{ p.occupation or '' if p else '' }}">
+
+    <label>患者メモ（アレルギー・既往歴など）</label>
+    <textarea name="memo">{{ p.memo or '' if p else '' }}</textarea>
+
+    <div class="btn-row"><button class="btn" type="submit">保存</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="day-nav">
+  <a class="btn secondary" href="{{ url_for('report_menu', month=prev_month.strftime('%Y-%m')) }}">◀</a>
+  <form method="get" class="date-form"><input type="month" name="month" value="{{ first.strftime('%Y-%m') }}" onchange="this.form.submit()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;"></form>
+  <a class="btn secondary" href="{{ url_for('report_menu', month=next_month.strftime('%Y-%m')) }}">▶</a>
+</div>
+<div class="tabs">
+  <a href="{{ url_for('report_monthly', month=first.strftime('%Y-%m')) }}">月間集計</a>
+  <a class="active" href="{{ url_for('report_menu', month=first.strftime('%Y-%m')) }}">メニュー別</a>
+  <a href="{{ url_for('report_yearly', year=first.year) }}">年間集計</a>
+</div>
+<div class="day-title">{{ first.year }}年{{ first.month }}月　メニュー別集計</div>
+<div class="table-wrap">
+  <table class="ledger">
+    <thead><tr><th>商品名</th><th>区分</th><th class="num">数量</th><th class="num">金額</th><th class="num">値引</th><th class="num">売上</th></tr></thead>
+    <tbody>
+      {% for name, a in rows %}
+      <tr><td>{{ name }}</td><td>{{ a.category }}</td><td class="num">{{ a.quantity }}</td><td class="num">{{ "{:,}".format(a.gross) }}</td>
+        <td class="num">{{ "{:,}".format(a.discount) }}</td><td class="num"><b>{{ "{:,}".format(a.amount) }}</b></td></tr>
+      {% else %}
+      <tr><td colspan="6" class="empty">この月の売上はありません</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr><td>合計</td><td></td><td></td><td></td><td></td><td class="num">{{ "{:,}".format(total_amount) }}</td></tr></tfoot>
+  </table>
+</div>
+{% endblock %}

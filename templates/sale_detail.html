@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('sales_ledger', date=sale.sale_date.isoformat()) }}">← 売上台帳に戻る</a>
+<div class="card">
+  <h2>会計参照　{{ sale.sale_date.strftime("%Y/%m/%d") }}（{{ "月火水木金土日"[sale.sale_date.weekday()] }}）</h2>
+  <div style="margin-bottom:10px;">
+    <a href="{{ url_for('patient_detail', patient_id=sale.patient_id) }}" style="color:var(--text);text-decoration:none;font-weight:600;font-size:17px;">{{ sale.patient.full_name }} 様</a>
+    <span class="chart-no">No.{{ sale.patient.chart_no }}</span>
+    {% if sale.nominated %}<span class="status New">指名</span>{% endif %}
+  </div>
+  <dl class="kv">
+    <dt>担当</dt><dd>{{ sale.staff or "-" }}</dd>
+    {% if sale.memo %}<dt>メモ</dt><dd>{{ sale.memo }}</dd>{% endif %}
+  </dl>
+</div>
+
+<div class="table-wrap">
+  <table class="ledger">
+    <thead><tr><th>区分</th><th>商品名</th><th class="num">数量</th><th class="num">単価</th><th class="num">値引</th><th class="num">金額</th></tr></thead>
+    <tbody>
+      {% for l in sale.lines %}
+      <tr><td>{{ l.sales_type }}</td><td>{{ l.name }}<div class="chart-no">{{ l.category }}・{{ l.tax_type }}</div></td>
+        <td class="num">{{ l.quantity }}</td><td class="num">{{ "{:,}".format(l.unit_price) }}</td>
+        <td class="num">{{ "{:,}".format(l.discount) }}</td><td class="num"><b>{{ "{:,}".format(l.amount) }}</b></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="sum-box">
+  <div class="sum-line"><span>商品合計</span><span>{{ "{:,}".format(sale.tech_total + sale.ticket_total + sale.shop_total) }}円</span></div>
+  <div class="sum-line"><span>値引計</span><span>{{ "{:,}".format(sale.discount_total) }}円</span></div>
+  {% if sale.exclusive_tax %}<div class="sum-line"><span>外税分（10%）</span><span>{{ "{:,}".format(sale.exclusive_tax) }}円</span></div>{% endif %}
+  <div class="sum-line"><span>（消費税）</span><span>{{ "{:,}".format(sale.tax) }}円</span></div>
+  <div class="sum-line"><span>ご請求額</span><span class="big">{{ "{:,}".format(sale.total) }}円</span></div>
+  {% for p in sale.payments %}<div class="sum-line"><span>入金：{{ p.method }}</span><span>{{ "{:,}".format(p.amount) }}円</span></div>{% endfor %}
+  {% if sale.tendered is not none %}
+    <div class="sum-line"><span>お預かり額</span><span>{{ "{:,}".format(sale.tendered) }}円</span></div>
+    <div class="sum-line"><span>おつり</span><span>{{ "{:,}".format(sale.change) }}円</span></div>
+  {% endif %}
+</div>
+
+<div class="btn-row">
+  <a class="btn" href="{{ url_for('sale_edit', sale_id=sale.id) }}">会計修正</a>
+  <a class="btn secondary" href="{{ url_for('sale_receipt', sale_id=sale.id) }}" target="_blank">レシート印刷</a>
+  <a class="btn secondary" href="{{ url_for('sale_invoice', sale_id=sale.id) }}" target="_blank">領収書発行</a>
+  <a class="btn secondary" href="{{ url_for('reservation_new', patient_id=sale.patient_id, date=sale.sale_date.isoformat()) }}">次回予約</a>
+  <a class="btn secondary" href="{{ url_for('patient_detail', patient_id=sale.patient_id) }}">顧客情報</a>
+  <form method="post" action="{{ url_for('sale_delete', sale_id=sale.id) }}" onsubmit="return confirm('このお会計を削除します。売上集計からも消え、元に戻せません。よろしいですか？')">
+    <button class="btn danger" type="submit">会計削除</button></form>
+</div>
+{% endblock %}

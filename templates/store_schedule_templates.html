@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('reservation_graph') }}">← 予約グラフに戻る</a>
+<div class="card">
+  <h2>お店の予定のテンプレート</h2>
+  <p style="font-size:13px;color:var(--text-mute);margin-top:0;">お店の予定を登録するときに、名前と色をワンタップで選べます。</p>
+  {% if templates %}
+    {% for t in templates %}
+    <div class="prod-row" style="display:flex;align-items:center;justify-content:space-between;">
+      <span class="chip" style="border-color:{{ t.color }};background:{{ t.color }}22;">{{ t.label }}</span>
+      <form method="post" action="{{ url_for('store_schedule_template_delete', template_id=t.id) }}" onsubmit="return confirm('このテンプレートを削除しますか？')">
+        <button class="icon-btn" type="submit" title="削除">×</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">まだテンプレートがありません</div>
+  {% endif %}
+</div>
+<div class="card">
+  <h2>テンプレートを追加</h2>
+  <form method="post">
+    <label>名前</label>
+    <input type="text" name="label" required placeholder="例：夏休み">
+    <label>色</label>
+    <input type="color" name="color" value="#ef9245" style="height:44px;padding:4px;">
+    <div class="btn-row"><button class="btn" type="submit">追加</button></div>
+  </form>
+</div>
+{% endblock %}

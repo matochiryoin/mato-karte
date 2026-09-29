@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('patient_detail', patient_id=patient.id) }}">← {{ patient.full_name }} 様に戻る</a>
+
+{% include "_visit_date_nav.html" %}
+
+<div class="card">
+  <h2>{{ visit.visit_date.strftime("%Y/%m/%d") }} のカルテ</h2>
+  <dl class="kv">
+    <dt>担当</dt><dd>{{ visit.staff or "-" }}</dd>
+    <dt>基本サービス</dt><dd>{{ visit.base_service or "-" }}</dd>
+    {% if visit.additional_service %}<dt>追加サービス</dt><dd>{{ visit.additional_service }}</dd>{% endif %}
+    {% if visit.ticket %}<dt>回数券等</dt><dd>{{ visit.ticket }}</dd>{% endif %}
+    {% if visit.diagnosis %}<dt>傷病名</dt><dd>{{ visit.diagnosis }}</dd>{% endif %}
+    <dt>主訴1</dt><dd>{{ visit.chief_complaint_1 or "-" }}</dd>
+    {% if visit.chief_complaint_2 %}<dt>主訴2</dt><dd>{{ visit.chief_complaint_2 }}</dd>{% endif %}
+    {% if visit.chief_complaint_3 %}<dt>主訴3</dt><dd>{{ visit.chief_complaint_3 }}</dd>{% endif %}
+    {% if visit.content %}<dt>内容</dt><dd>{{ visit.content }}</dd>{% endif %}
+    {% if visit.memo %}<dt>備考</dt><dd>{{ visit.memo }}</dd>{% endif %}
+    {% if visit.ticket_use_11 %}<dt>11回数券利用</dt><dd>{{ visit.ticket_use_11 }}</dd>{% endif %}
+    {% if visit.ticket_use_5 %}<dt>5回数券利用</dt><dd>{{ visit.ticket_use_5 }}</dd>{% endif %}
+    {% if visit.treatment_memo %}<dt>施術メモ</dt><dd>{{ visit.treatment_memo }}</dd>{% endif %}
+    {% if visit.pain_scale is not none %}<dt>ペインスケール</dt><dd>{{ visit.pain_scale }} / 10</dd>{% endif %}
+    {% if visit.disease_category %}<dt>疾病分類</dt><dd>{{ visit.disease_category }}</dd>{% endif %}
+    {% if visit.custom_field_1 %}<dt>オリジナル項目</dt><dd>{{ visit.custom_field_1 }}</dd>{% endif %}
+    {% if visit.custom_field_2 %}<dt>オリジナル項目2</dt><dd>{{ visit.custom_field_2 }}</dd>{% endif %}
+  </dl>
+  <div class="btn-row">
+    <a class="btn secondary" href="{{ url_for('visit_edit', visit_id=visit.id) }}">編集する</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>写真</h2>
+  {% if visit.photos %}
+    <div class="photo-grid">
+      {% for photo in visit.photos %}
+        <img src="{{ url_for('uploaded_file', filename=photo.filename) }}" alt="{{ photo.caption or '施術写真' }}">
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">写真はまだありません</div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('visit_photo_upload', visit_id=visit.id) }}" enctype="multipart/form-data" style="margin-top:12px;">
+    <label>写真を追加</label>
+    <input type="file" name="photo" accept="image/*" capture="environment" required>
+    <label>キャプション（任意）</label>
+    <input type="text" name="caption">
+    <div class="btn-row">
+      <button class="btn secondary" type="submit">写真をアップロード</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

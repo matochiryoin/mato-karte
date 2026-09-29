@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% macro line_row(name, qty, price, discount, type, category, tax) %}
+<div class="line-box">
+  <div class="line-row">
+    <input type="text" list="product-list" name="line_name" value="{{ name }}" placeholder="商品名（選ぶか入力）" oninput="onName(this)" class="full">
+    <label>数量<input type="number" name="line_qty" value="{{ qty }}" min="1" oninput="recalc()"></label>
+    <label>単価<input type="number" name="line_price" value="{{ price }}" min="0" oninput="recalc()"></label>
+    <label>値引<input type="number" name="line_discount" value="{{ discount }}" min="0" oninput="recalc()"></label>
+    <button type="button" class="icon-btn" onclick="removeLine(this)" title="この商品を削除">×</button>
+  </div>
+  <div class="sub">
+    <select name="line_type">{% for t in sales_types %}<option {% if t == type %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+    <select name="line_category">{% for c in categories %}<option {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+    <select name="line_tax" onchange="recalc()">{% for x in tax_types %}<option {% if x == tax %}selected{% endif %}>{{ x }}</option>{% endfor %}</select>
+  </div>
+</div>
+{% endmacro %}
+{% block content %}
+<a class="back-link" href="{{ url_for('sales_ledger', date=sale_date.isoformat()) }}">← 売上台帳に戻る</a>
+<div class="card">
+  <h2>{{ "会計修正" if sale and sale.id else "お会計" }}</h2>
+  <form method="post" id="sale-form">
+    {% if reservation_id %}<input type="hidden" name="reservation_id" value="{{ reservation_id }}">{% endif %}
+    <label>患者</label>
+    <select name="patient_id" required data-patient-select onchange="showPatientInfo(this)">
+      <option value="">選択してください</option>
+      {% for p in patients %}
+        <option value="{{ p.id }}" {% if p.id == selected_patient_id %}selected{% endif %}
+          data-birth="{{ p.birth_date.strftime('%Y/%m/%d') if p.birth_date else '' }}"
+          data-last-visit="{{ p.last_visit_date.strftime('%Y/%m/%d') if p.last_visit_date else (p.last_visit.visit_date.strftime('%Y/%m/%d') if p.last_visit else '') }}"
+          data-gender="{{ p.gender or '' }}">{{ p.full_name }}（{{ p.full_name_kana or "-" }}）No.{{ p.chart_no }}</option>
+      {% endfor %}
+    </select>
+    <div class="patient-info" id="patient-info" hidden>
+      <span><b>誕生日</b> <span id="pi-birth">-</span></span>
+      <span><b>前回来店</b> <span id="pi-visit">-</span></span>
+      <span><b>性別</b> <span id="pi-gender">-</span></span>
+    </div>
+    <div class="field-row">
+      <div><label>売上日</label><input type="date" name="sale_date" value="{{ sale_date.isoformat() }}" required></div>
+      <div><label>担当</label>
+        <select name="staff">{% for s in staff_list %}<option {% if s == staff %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="chip-group" style="margin-top:10px;">
+      <input type="checkbox" class="chip-input" name="nominated" value="1" id="nominated" {% if sale and sale.nominated %}checked{% endif %}>
+      <label class="chip" for="nominated">指名あり</label>
+    </div>
+
+    <h3 style="margin-top:18px;">商品</h3>
+    <datalist id="product-list">{% for p in products %}<option value="{{ p.name }}">{% endfor %}</datalist>
+    <div id="lines">
+      {% if sale and sale.lines %}
+        {% for l in sale.lines %}{{ line_row(l.name, l.quantity, l.unit_price, l.discount, l.sales_type, l.category, l.tax_type) }}{% endfor %}
+      {% elif prefill_lines %}
+        {% for l in prefill_lines %}{{ line_row(l.name, 1, l.price, 0, l.type, l.category, l.tax) }}{% endfor %}
+      {% else %}
+        {{ line_row("", 1, 0, 0, "売上", "技術", "内税") }}
+      {% endif %}
+    </div>
+    <button type="button" class="btn secondary" onclick="addLine()">＋ 商品を追加</button>
+    <div style="margin-top:6px;"><a class="back-link" href="{{ url_for('products') }}">商品マスタの管理</a></div>
+
+    <div class="sum-box">
+      <div class="sum-line"><span>商品合計</span><span id="s-gross">0円</span></div>
+      <div class="sum-line"><span>値引計</span><span id="s-discount">0円</span></div>
+      <div class="sum-line"><span>外税分（10%）</span><span id="s-extax">0円</span></div>
+      <div class="sum-line"><span>（消費税）</span><span id="s-tax">0円</span></div>
+      <div class="sum-line"><span>ご請求額</span><span class="big" id="s-total">0円</span></div>
+    </div>
+
+    <h3 style="margin-top:18px;">入金</h3>
+    <div id="pays">
+      {% if sale and sale.payments %}
+        {% for p in sale.payments %}
+        <div class="pay-row">
+          <select name="pay_method">{% for m in methods %}<option {% if m == p.method %}selected{% endif %}>{{ m }}</option>{% endfor %}</select>
+          <input type="number" name="pay_amount" value="{{ p.amount }}" min="0" oninput="payTouched(this)">
+          <button type="button" class="icon-btn" onclick="this.parentNode.remove()" title="削除">×</button>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="pay-row">
+          <select name="pay_method">{% for m in methods %}<option>{{ m }}</option>{% endfor %}</select>
+          <input type="number" name="pay_amount" value="" min="0" data-auto="1" oninput="payTouched(this)">
+          <button type="button" class="icon-btn" onclick="this.parentNode.remove()" title="削除">×</button>
+        </div>
+      {% endif %}
+    </div>
+    <button type="button" class="btn secondary" onclick="addPay()">＋ 入金方法を追加</button>
+
+    <div class="field-row">
+      <div><label>お預かり額（現金のとき）</label>
+        <input type="number" name="tendered" id="tendered" value="{{ sale.tendered if sale and sale.tendered is not none else '' }}" min="0" oninput="recalc()">
+        <div class="quick-amounts">
+          <button type="button" onclick="setTendered(1000)">1,000</button>
+          <button type="button" onclick="setTendered(5000)">5,000</button>
+          <button type="button" onclick="setTendered(10000)">10,000</button>
+          <button type="button" onclick="setTendered('exact')">ぴったり</button>
+        </div>
+      </div>
+      <div><label>おつり</label><div class="sum-box" style="margin:0;padding:9px 12px;"><span id="s-change" class="big" style="font-size:18px;">0円</span></div></div>
+    </div>
+
+    <label>メモ</label>
+    <textarea name="memo">{{ sale.memo or '' if sale else '' }}</textarea>
+    <div class="btn-row"><button class="btn" type="submit">登録</button></div>
+  </form>
+</div>
+
+<template id="line-tpl">{{ line_row("", 1, 0, 0, "売上", "技術", "内税") }}</template>
+<template id="pay-tpl">
+  <div class="pay-row">
+    <select name="pay_method">{% for m in methods %}<option>{{ m }}</option>{% endfor %}</select>
+    <input type="number" name="pay_amount" value="" min="0" oninput="payTouched(this)">
+    <button type="button" class="icon-btn" onclick="this.parentNode.remove()" title="削除">×</button>
+  </div>
+</template>
+<script>
+var PRODUCTS = {{ product_map | tojson }};
+function yen(n) { return n.toLocaleString('ja-JP') + '円'; }
+function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+function showPatientInfo(select) {
+  var o = select.selectedOptions[0], box = document.getElementById('patient-info');
+  if (!o || !o.value) { box.hidden = true; return; }
+  document.getElementById('pi-birth').textContent = o.dataset.birth || '不明';
+  document.getElementById('pi-visit').textContent = o.dataset.lastVisit || '初回';
+  document.getElementById('pi-gender').textContent = o.dataset.gender || '不明';
+  box.hidden = false;
+}
+function computeTotal() {
+  var gross = 0, discount = 0, exBase = 0;
+  document.querySelectorAll('#lines .line-box').forEach(function (b) {
+    var q = num(b.querySelector('[name=line_qty]').value), pr = num(b.querySelector('[name=line_price]').value);
+    var d = num(b.querySelector('[name=line_discount]').value), amt = q * pr - d;
+    gross += q * pr; discount += d;
+    if (b.querySelector('[name=line_tax]').value === '外税') exBase += amt;
+  });
+  var exTax = Math.floor((exBase * 10 + 50) / 100);
+  return gross - discount + exTax;
+}
+function setTendered(v) {
+  document.getElementById('tendered').value = v === 'exact' ? Math.max(computeTotal(), 0) : v;
+  recalc();
+}
+function onName(input) {
+  var p = PRODUCTS[input.value];
+  if (p) {
+    var box = input.closest('.line-box');
+    box.querySelector('[name=line_price]').value = p.price;
+    box.querySelector('[name=line_category]').value = p.category;
+    box.querySelector('[name=line_tax]').value = p.tax;
+  }
+  recalc();
+}
+function addLine() { document.getElementById('lines').appendChild(document.getElementById('line-tpl').content.cloneNode(true)); recalc(); }
+function removeLine(btn) { btn.closest('.line-box').remove(); recalc(); }
+function addPay() { document.getElementById('pays').appendChild(document.getElementById('pay-tpl').content.cloneNode(true)); }
+function payTouched(input) { delete input.dataset.auto; recalc(); }
+function recalc() {
+  var gross = 0, discount = 0, exBase = 0, inBase = 0;
+  document.querySelectorAll('#lines .line-box').forEach(function (b) {
+    var q = num(b.querySelector('[name=line_qty]').value), pr = num(b.querySelector('[name=line_price]').value);
+    var d = num(b.querySelector('[name=line_discount]').value), amt = q * pr - d;
+    gross += q * pr; discount += d;
+    if (b.querySelector('[name=line_tax]').value === '外税') exBase += amt; else inBase += amt;
+  });
+  var exTax = Math.floor((exBase * 10 + 50) / 100);
+  var total = gross - discount + exTax;
+  document.getElementById('s-gross').textContent = yen(gross);
+  document.getElementById('s-discount').textContent = yen(discount);
+  document.getElementById('s-extax').textContent = yen(exTax);
+  document.getElementById('s-tax').textContent = yen(Math.floor((inBase * 10 + 55) / 110) + exTax);
+  document.getElementById('s-total').textContent = yen(total);
+  var auto = document.querySelector('#pays [data-auto]');
+  var rows = document.querySelectorAll('#pays .pay-row');
+  if (auto && rows.length === 1) auto.value = total || '';
+  var cash = 0;
+  rows.forEach(function (r) { if (r.querySelector('select').value === '現金') cash += num(r.querySelector('input').value); });
+  var t = document.getElementById('tendered').value;
+  document.getElementById('s-change').textContent = (t !== '' && cash) ? yen(Math.max(num(t) - cash, 0)) : '0円';
+}
+document.addEventListener('change', function (e) { if (e.target.closest('#pays')) recalc(); });
+recalc();
+showPatientInfo(document.querySelector('[name=patient_id]'));
+</script>
+<script src="{{ url_for('static', filename='patient_filter.js') }}"></script>
+{% endblock %}

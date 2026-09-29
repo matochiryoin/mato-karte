@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+karte.db
+karte.db-journal
+uploads/
+server.log
+backup/
+import/

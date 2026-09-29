@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="day-nav">
+  <a class="btn secondary" href="{{ url_for('sales_ledger', date=prev_day.isoformat(), tab=tab) }}">◀</a>
+  <form method="get" class="date-form">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <input type="date" name="date" value="{{ day.isoformat() }}" onchange="this.form.submit()">
+  </form>
+  <a class="btn secondary" href="{{ url_for('sales_ledger', date=next_day.isoformat(), tab=tab) }}">▶</a>
+  <a class="btn secondary" href="{{ url_for('sales_ledger', date=today.isoformat(), tab=tab) }}">今日</a>
+</div>
+<div class="day-title">売上台帳　{{ day.strftime("%Y/%m/%d") }}（{{ weekdays[day.weekday()] }}）</div>
+<div class="tabs">
+  <a class="{{ 'active' if tab == 'sales' }}" href="{{ url_for('sales_ledger', date=day.isoformat(), tab='sales') }}">売上</a>
+  <a class="{{ 'active' if tab == 'payments' }}" href="{{ url_for('sales_ledger', date=day.isoformat(), tab='payments') }}">入金</a>
+</div>
+
+{% if tab == 'sales' %}
+<div class="table-wrap">
+  <table class="ledger">
+    <thead><tr><th>患者名</th><th>主担当</th><th>来店時間</th><th class="num">技術計</th><th class="num">回数券計</th><th class="num">店販計</th><th class="num">値引計</th><th class="num">（消費税）</th><th class="num">売上計</th></tr></thead>
+    <tbody>
+      {% for s in sales %}
+      <tr>
+        <td><a href="{{ url_for('sale_detail', sale_id=s.id) }}"><b>{{ s.patient.full_name }} 様</b></a><div class="chart-no">No.{{ s.patient.chart_no }}　<b>{{ "{:,}".format(s.total) }}円</b></div></td>
+        <td>{{ s.staff }}{% if s.nominated %} <span class="status New">指名</span>{% endif %}</td>
+        <td>{% if s.reservation %}{{ s.reservation.arrival_min | hm if s.reservation.arrival_min is not none else s.reservation.start_min | hm }}{% else %}-{% endif %}</td>
+        <td class="num">{{ "{:,}".format(s.tech_total) }}</td><td class="num">{{ "{:,}".format(s.ticket_total) }}</td>
+        <td class="num">{{ "{:,}".format(s.shop_total) }}</td><td class="num">{{ "{:,}".format(s.discount_total) }}</td>
+        <td class="num">({{ "{:,}".format(s.tax) }})</td><td class="num"><b>{{ "{:,}".format(s.total) }}</b></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="empty">この日の売上はありません</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr><td>{{ totals.count }} 件</td><td></td><td></td>
+      <td class="num">{{ "{:,}".format(totals.tech) }}</td><td class="num">{{ "{:,}".format(totals.ticket) }}</td><td class="num">{{ "{:,}".format(totals.shop) }}</td>
+      <td class="num">{{ "{:,}".format(totals.discount) }}</td><td class="num">({{ "{:,}".format(totals.tax) }})</td><td class="num">{{ "{:,}".format(totals.total) }}</td></tr></tfoot>
+  </table>
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="ledger">
+    <thead><tr><th>患者名</th><th>入金方法</th><th class="num">金額</th></tr></thead>
+    <tbody>
+      {% for s in sales %}{% for p in s.payments %}
+      <tr><td><a href="{{ url_for('sale_detail', sale_id=s.id) }}">{{ s.patient.full_name }} 様</a></td><td>{{ p.method }}</td><td class="num">{{ "{:,}".format(p.amount) }}</td></tr>
+      {% endfor %}{% else %}
+      <tr><td colspan="3" class="empty">この日の入金はありません</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      {% for m, amt in by_method.items() %}<tr><td>{{ m }}計</td><td></td><td class="num">{{ "{:,}".format(amt) }}</td></tr>{% endfor %}
+      <tr><td>入金合計</td><td></td><td class="num">{{ "{:,}".format(by_method.values() | sum) }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+{% endif %}
+<div class="btn-row"><a class="btn" href="{{ url_for('sale_new', date=day.isoformat()) }}">＋ お会計を入力</a></div>
+{% endblock %}

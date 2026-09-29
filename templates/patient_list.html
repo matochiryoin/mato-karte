@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="search-row" method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="名前・カナ・電話番号・カルテNoで検索">
+  <button class="btn" type="submit">検索</button>
+</form>
+
+<div class="card">
+  {% if patients %}
+    {% for p in patients %}
+      <a class="patient-item" href="{{ url_for('patient_detail', patient_id=p.id) }}">
+        <div>
+          <div class="name">{{ p.full_name }}</div>
+          <div class="sub">{{ p.full_name_kana }}{% if p.phone %} ・ {{ p.phone }}{% endif %}</div>
+        </div>
+        <div class="chart-no">No.{{ p.chart_no }}</div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">{% if q %}該当する患者が見つかりません{% else %}まだ患者が登録されていません{% endif %}</div>
+  {% endif %}
+</div>
+
+{% if pages > 1 %}
+<div class="day-nav" style="justify-content:center;">
+  {% if page > 1 %}<a class="btn secondary" href="{{ url_for('patient_list', q=q, page=page - 1) }}">◀ 前へ</a>{% endif %}
+  <span style="font-size:14px;color:var(--text-mute);">{{ page }} / {{ pages }} ページ（全{{ "{:,}".format(total) }}件）</span>
+  {% if page < pages %}<a class="btn secondary" href="{{ url_for('patient_list', q=q, page=page + 1) }}">次へ ▶</a>{% endif %}
+</div>
+{% else %}
+<div style="font-size:13px;color:var(--text-mute);margin-bottom:10px;">全{{ total }}件</div>
+{% endif %}
+<a class="btn" href="{{ url_for('patient_new') }}">＋ 新規患者を登録</a>
+{% endblock %}

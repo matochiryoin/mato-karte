@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="day-nav">
+  <a class="btn secondary" href="{{ url_for('report_yearly', year=year - 1) }}">◀</a>
+  <div class="day-title" style="margin:0;flex:1;text-align:center;">{{ year }}年</div>
+  <a class="btn secondary" href="{{ url_for('report_yearly', year=year + 1) }}">▶</a>
+</div>
+<div class="tabs">
+  <a href="{{ url_for('report_monthly', month='%d-%02d' % (year, 1)) }}">月間集計</a>
+  <a href="{{ url_for('report_menu', month='%d-%02d' % (year, 1)) }}">メニュー別</a>
+  <a class="active" href="{{ url_for('report_yearly', year=year) }}">年間集計</a>
+</div>
+<div class="day-title">{{ year }}年　年間集計
+  <span class="counts">売上 {{ "{:,}".format(totals.total) }}円 ／ {{ totals.count }}件</span></div>
+<div class="table-wrap">
+  <table class="ledger">
+    <thead><tr><th>月</th><th class="num">件数</th><th class="num">技術計</th><th class="num">回数券計</th><th class="num">店販計</th><th class="num">値引計</th><th class="num">（消費税）</th><th class="num">売上計</th></tr></thead>
+    <tbody>
+      {% for m, s in rows %}
+      <tr>
+        <td><a href="{{ url_for('report_monthly', month='%d-%02d' % (year, m)) }}">{{ m }}月</a></td>
+        <td class="num">{{ s.count or '' }}</td>
+        <td class="num">{{ "{:,}".format(s.tech) if s.count else '' }}</td><td class="num">{{ "{:,}".format(s.ticket) if s.count else '' }}</td>
+        <td class="num">{{ "{:,}".format(s.shop) if s.count else '' }}</td><td class="num">{{ "{:,}".format(s.discount) if s.count else '' }}</td>
+        <td class="num">{{ "(" ~ "{:,}".format(s.tax) ~ ")" if s.count else '' }}</td><td class="num"><b>{{ "{:,}".format(s.total) if s.count else '' }}</b></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr><td>合計</td><td class="num">{{ totals.count }}</td><td class="num">{{ "{:,}".format(totals.tech) }}</td><td class="num">{{ "{:,}".format(totals.ticket) }}</td>
+      <td class="num">{{ "{:,}".format(totals.shop) }}</td><td class="num">{{ "{:,}".format(totals.discount) }}</td>
+      <td class="num">({{ "{:,}".format(totals.tax) }})</td><td class="num">{{ "{:,}".format(totals.total) }}</td></tr></tfoot>
+  </table>
+</div>
+{% endblock %}

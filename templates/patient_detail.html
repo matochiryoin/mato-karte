@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('patient_list') }}">← 患者一覧に戻る</a>
+
+<div class="card">
+  <h2>{{ patient.full_name }} 様<span class="chart-no"> (No.{{ patient.chart_no }})</span></h2>
+  <dl class="kv">
+    <dt>フリガナ</dt><dd>{{ patient.full_name_kana or "-" }}</dd>
+    <dt>携帯番号</dt><dd>{{ patient.mobile or "-" }}</dd>
+    <dt>電話番号</dt><dd>{{ patient.phone or "-" }}</dd>
+    {% if patient.email %}<dt>メール</dt><dd>{{ patient.email }}</dd>{% endif %}
+    {% if patient.address %}<dt>住所</dt><dd>{{ patient.address }}</dd>{% endif %}
+    <dt>生年月日</dt><dd>{{ patient.birth_date.strftime("%Y/%m/%d") if patient.birth_date else "-" }}</dd>
+    <dt>性別</dt><dd>{{ patient.gender or "-" }}</dd>
+    {% if patient.registered_date %}<dt>登録日</dt><dd>{{ patient.registered_date.strftime("%Y/%m/%d") }}</dd>{% endif %}
+    {% if patient.first_visit_date %}<dt>初回来院</dt><dd>{{ patient.first_visit_date.strftime("%Y/%m/%d") }}</dd>{% endif %}
+    {% if patient.last_visit_date %}<dt>最終来院</dt><dd>{{ patient.last_visit_date.strftime("%Y/%m/%d") }}（bonbone時点）</dd>{% endif %}
+    {% if patient.marital_status %}<dt>既婚区分</dt><dd>{{ patient.marital_status }}</dd>{% endif %}
+    {% if patient.blood_type %}<dt>血液型</dt><dd>{{ patient.blood_type }}</dd>{% endif %}
+    {% if patient.occupation %}<dt>職業</dt><dd>{{ patient.occupation }}</dd>{% endif %}
+    {% if patient.age_bracket %}<dt>年代</dt><dd>{{ patient.age_bracket }}</dd>{% endif %}
+    {% if patient.visit_motivation %}<dt>来店動機</dt><dd>{{ patient.visit_motivation }}</dd>{% endif %}
+    {% if patient.memo %}<dt>メモ</dt><dd>{{ patient.memo }}</dd>{% endif %}
+  </dl>
+  <div class="btn-row">
+    <a class="btn secondary" href="{{ url_for('patient_edit', patient_id=patient.id) }}">患者情報を編集</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>来院履歴</h2>
+  {% if patient.visits %}
+    {% for v in patient.visits %}
+      <a class="visit-item" href="{{ url_for('visit_detail', visit_id=v.id) }}">
+        <div class="date">{{ v.visit_date.strftime("%Y/%m/%d") }}{% if v.staff %}　担当：{{ v.staff }}{% endif %}</div>
+        <div class="summary">{{ v.chief_complaint_1 or v.diagnosis or "(主訴未入力)" }}</div>
+      </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">来院記録がまだありません</div>
+  {% endif %}
+</div>
+
+<div class="btn-row" style="margin-top:0;">
+  <a class="btn" href="{{ url_for('visit_new', patient_id=patient.id) }}">＋ 今日のカルテを入力</a>
+  <a class="btn secondary" href="{{ url_for('reservation_new', patient_id=patient.id) }}">＋ 予約を入れる</a>
+</div>
+{% endblock %}

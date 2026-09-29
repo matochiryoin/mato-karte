@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('reservation_graph', date=r.reservation_date.isoformat()) }}">← 予約グラフに戻る</a>
+<div class="card">
+  <h2>{{ r.patient.full_name }} 様<span class="chart-no"> (No.{{ r.patient.chart_no }})</span></h2>
+  <div style="margin-bottom:8px;">
+    <span class="status {{ r.status }}">{{ r.status }}</span>
+    {% if r.is_new_patient %}<span class="status New">New</span>{% endif %}
+    {% if r.nominated %}<span class="status New">指名</span>{% endif %}
+    {% if r.paid %}<span class="status 会計済">会計済</span>{% endif %}
+  </div>
+  <dl class="kv">
+    <dt>予約日</dt><dd>{{ r.reservation_date.strftime("%Y/%m/%d") }}</dd>
+    <dt>予約時間</dt><dd>{{ r.time_range }}（{{ r.end_min - r.start_min }}分）</dd>
+    <dt>予約区分</dt><dd>{{ r.reservation_type }}</dd>
+    {% if r.menu_list %}<dt>メニュー</dt><dd>{{ r.menu_list | join("、") }}</dd>{% endif %}
+    {% if r.arrival_min is not none %}<dt>来院時刻</dt><dd>{{ r.arrival_min | hm }}</dd>{% endif %}
+    {% if r.treatment_start_min is not none %}<dt>施術開始</dt><dd>{{ r.treatment_start_min | hm }}</dd>{% endif %}
+    <dt>担当</dt><dd>{{ r.staff or "-" }}</dd>
+    <dt>電話番号</dt><dd>{{ r.patient.mobile or r.patient.phone or "-" }}</dd>
+    {% if r.patient.last_visit %}<dt>前回来院</dt><dd>{{ r.patient.last_visit.visit_date.strftime("%Y/%m/%d") }}</dd>{% endif %}
+    {% if r.memo %}<dt>受付メモ</dt><dd>{{ r.memo }}</dd>{% endif %}
+    {% if r.cancel_reason %}<dt>キャンセル理由</dt><dd>{{ r.cancel_reason }}</dd>{% endif %}
+  </dl>
+</div>
+
+<div class="card">
+  <div class="btn-row" style="margin-top:0;">
+    <a class="btn secondary" href="{{ url_for('visit_new', patient_id=r.patient_id, date=r.reservation_date.isoformat()) }}">問診（カルテ入力）</a>
+    {% if r.sales %}
+      <a class="btn" href="{{ url_for('sale_detail', sale_id=r.sales[0].id) }}">会計参照</a>
+    {% else %}
+      <a class="btn" href="{{ url_for('sale_new', reservation_id=r.id) }}">お会計</a>
+    {% endif %}
+    <a class="btn secondary" href="{{ url_for('reservation_edit', reservation_id=r.id) }}">予約修正・時刻変更</a>
+    <a class="btn secondary" href="{{ url_for('reservation_new', patient_id=r.patient_id, date=r.reservation_date.isoformat()) }}">次回予約</a>
+    <a class="btn secondary" href="{{ url_for('patient_detail', patient_id=r.patient_id) }}">患者情報</a>
+  </div>
+  <div class="btn-row">
+    {% if r.status != '来院' %}
+    <form method="post" action="{{ url_for('reservation_status', reservation_id=r.id) }}">
+      <input type="hidden" name="status" value="来院"><button class="btn secondary" type="submit">来院にする</button></form>
+    {% endif %}
+    {% if r.status not in ('キャンセル', '無断キャンセル') %}
+    <a class="btn secondary" href="{{ url_for('reservation_cancel', reservation_id=r.id) }}">予約キャンセル</a>
+    {% else %}
+    <form method="post" action="{{ url_for('reservation_status', reservation_id=r.id) }}">
+      <input type="hidden" name="status" value="予約"><button class="btn secondary" type="submit">予約に戻す</button></form>
+    {% endif %}
+    <form method="post" action="{{ url_for('reservation_delete', reservation_id=r.id) }}" onsubmit="return confirm('この予約を削除します。元に戻せません。よろしいですか？')">
+      <button class="btn danger" type="submit">予約削除</button></form>
+  </div>
+</div>
+{% endblock %}

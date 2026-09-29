@@ -1,0 +1,8 @@
+{% if patient.visits %}
+<div class="quick-days">
+  <a class="quick-day {{ 'active' if not visit }}" href="{{ url_for('visit_new', patient_id=patient.id) }}">＋ 新規</a>
+  {% for v in patient.visits %}
+    <a class="quick-day {{ 'active' if visit and v.id == visit.id }}" href="{{ url_for('visit_detail', visit_id=v.id) }}">{{ v.visit_date.strftime('%Y/%m/%d') }}</a>
+  {% endfor %}
+</div>
+{% endif %}

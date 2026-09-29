@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ログイン｜まと治療院 電子カルテ</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main style="max-width:360px;padding-top:60px;">
+    <div class="card" style="text-align:center;">
+      <div class="brand-mark" style="width:48px;height:48px;font-size:22px;margin:0 auto 14px;">M</div>
+      <h2>まと治療院 電子カルテ</h2>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+      {% endwith %}
+      <form method="post" style="text-align:left;margin-top:10px;">
+        <label>パスワード</label>
+        <input type="password" name="password" autofocus required>
+        <div class="btn-row"><button class="btn" type="submit" style="flex:1;">ログイン</button></div>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

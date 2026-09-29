@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('reservation_detail', reservation_id=r.id) }}">← 予約詳細に戻る</a>
+<div class="card">
+  <h2>キャンセル理由</h2>
+  <p style="margin-top:0;">{{ r.patient.full_name }} 様（{{ r.reservation_date.strftime("%Y/%m/%d") }} {{ r.time_range }}）の予約をキャンセルします。よろしいですか？</p>
+  <form method="post">
+    <label>キャンセル理由</label>
+    <textarea name="cancel_reason" rows="5">{{ r.cancel_reason or '' }}</textarea>
+
+    <div class="btn-row">
+      <button class="btn secondary" type="submit" name="action" value="no_show">無断キャンセル</button>
+      <button class="btn danger" type="submit" name="action" value="cancel">キャンセルする</button>
+      <a class="btn" href="{{ url_for('reservation_detail', reservation_id=r.id) }}">キャンセルしない</a>
+    </div>
+    <p style="font-size:12px;color:var(--text-mute);margin-top:14px;">
+      「無断キャンセル」は、予約開始日時を過ぎている場合の記録用です。
+    </p>
+  </form>
+</div>
+{% endblock %}

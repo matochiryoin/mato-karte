@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ url_for('reservation_graph', date=day.isoformat()) }}">← 予約グラフに戻る</a>
+<div class="card">
+  <h2>{{ "予約修正" if reservation and reservation.id else "予約入力" }}</h2>
+  {% if not patients %}
+    <div class="empty">患者が登録されていません。先に<a href="{{ url_for('patient_new') }}">患者を登録</a>してください</div>
+  {% else %}
+  <form method="post">
+    {% if not reservation %}
+    <label>顧客区分</label>
+    <div class="chip-group">
+      <input type="radio" class="chip-input" name="customer_type" value="existing" id="ct-existing" checked onchange="toggleCustomerType()">
+      <label class="chip" for="ct-existing">既存顧客</label>
+      <input type="radio" class="chip-input" name="customer_type" value="new" id="ct-new" onchange="toggleCustomerType()">
+      <label class="chip" for="ct-new">新規顧客</label>
+    </div>
+    {% endif %}
+
+    <div id="existing-patient-block">
+      <label>患者</label>
+      <select name="patient_id" {% if not reservation %}required{% endif %} data-patient-select>
+        <option value="">選択してください</option>
+        {% for p in patients %}
+          <option value="{{ p.id }}" {% if p.id == selected_patient_id %}selected{% endif %}>{{ p.full_name }}（{{ p.full_name_kana or "-" }}）No.{{ p.chart_no }}</option>
+        {% endfor %}
+      </select>
+      <div style="margin-top:6px;"><a class="back-link" href="{{ url_for('patient_new') }}">＋ 新規患者を登録</a></div>
+    </div>
+
+    {% if not reservation %}
+    <div id="new-patient-block" style="display:none;">
+      <div class="field-row">
+        <div><label>姓</label><input type="text" name="new_last_name"></div>
+        <div><label>名</label><input type="text" name="new_first_name"></div>
+      </div>
+      <div class="field-row">
+        <div><label>セイ</label><input type="text" name="new_last_name_kana"></div>
+        <div><label>メイ</label><input type="text" name="new_first_name_kana"></div>
+      </div>
+      <label>電話番号</label>
+      <input type="tel" name="new_phone">
+      <div class="chip-group" style="margin-top:8px;">
+        <input type="radio" class="chip-input" name="new_phone_type" value="携帯" id="pt-1" checked>
+        <label class="chip" for="pt-1">携帯</label>
+        <input type="radio" class="chip-input" name="new_phone_type" value="自宅" id="pt-2">
+        <label class="chip" for="pt-2">自宅</label>
+      </div>
+      <label>性別</label>
+      <div class="chip-group">
+        {% for g in ["不明", "女性", "男性", "ユニセックス"] %}
+          <input type="radio" class="chip-input" name="new_gender" value="{{ g }}" id="ng-{{ loop.index }}" {% if loop.first %}checked{% endif %}>
+          <label class="chip" for="ng-{{ loop.index }}">{{ g }}</label>
+        {% endfor %}
+      </div>
+      <label>注意事項</label>
+      <textarea name="new_notice"></textarea>
+    </div>
+    {% endif %}
+
+    <div class="field-row">
+      <div>
+        <label>日付</label>
+        <input type="date" name="reservation_date" value="{{ day.isoformat() }}" required>
+      </div>
+      <div>
+        <label>担当</label>
+        <select name="staff">
+          {% for s in staff_list %}<option value="{{ s }}" {% if s == staff %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div>
+        <label>開始時刻</label>
+        <select name="start_min">
+          {% for t in time_options %}<option value="{{ t }}" {% if t == start_min %}selected{% endif %}>{{ t | hm }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>予約時間</label>
+        <select name="duration">
+          {% set cur = (reservation.end_min - reservation.start_min) if reservation and reservation.end_min else 30 %}
+          {% for d in duration_options %}<option value="{{ d }}" {% if d == cur %}selected{% endif %}>{{ d }}分</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <label>予約区分</label>
+    <div class="chip-group">
+      {% for t in reservation_types %}
+        <input type="radio" class="chip-input" name="reservation_type" value="{{ t }}" id="rt-{{ loop.index }}"
+          {% if (reservation.reservation_type if reservation else '通常予約') == t %}checked{% endif %}>
+        <label class="chip" for="rt-{{ loop.index }}">{{ t }}</label>
+      {% endfor %}
+    </div>
+
+    <label>メニュー</label>
+    <div class="chip-group">
+      {% for p in products %}
+        <input type="checkbox" class="chip-input" name="menu" value="{{ p.name }}" id="mn-{{ p.id }}"
+          {% if reservation and p.name in reservation.menu_list %}checked{% endif %}>
+        <label class="chip" for="mn-{{ p.id }}">{{ p.name }}</label>
+      {% endfor %}
+    </div>
+    <div style="margin-top:6px;"><a class="back-link" href="{{ url_for('products') }}">商品・メニューの管理</a></div>
+
+    <label>売上区分</label>
+    <div class="chip-group">
+      {% for t in sales_types %}
+        <input type="radio" class="chip-input" name="sales_type" value="{{ t }}" id="st-{{ loop.index }}"
+          {% if (reservation.sales_type if reservation else '売上') == t %}checked{% endif %}>
+        <label class="chip" for="st-{{ loop.index }}">{{ t }}</label>
+      {% endfor %}
+    </div>
+
+    <div class="field-row">
+      <div>
+        <label>来院時刻</label>
+        <div class="time-row">
+          <input type="time" name="arrival_time" value="{{ arrival_time }}">
+          <button type="button" class="btn secondary" onclick="setNow(this)">現在</button>
+        </div>
+      </div>
+      <div>
+        <label>施術開始時刻</label>
+        <div class="time-row">
+          <input type="time" name="treatment_time" value="{{ treatment_time }}">
+          <button type="button" class="btn secondary" onclick="setNow(this)">現在</button>
+        </div>
+      </div>
+    </div>
+
+    <label>指名</label>
+    <div class="chip-group">
+      <input type="checkbox" class="chip-input" name="nominated" value="1" id="nominated" {% if reservation and reservation.nominated %}checked{% endif %}>
+      <label class="chip" for="nominated">指名あり</label>
+    </div>
+
+    <label>受付メモ</label>
+    <textarea name="memo">{{ reservation.memo or '' if reservation else '' }}</textarea>
+
+    <div class="btn-row"><button class="btn" type="submit">保存</button></div>
+  </form>
+  {% endif %}
+</div>
+<script>
+function setNow(btn) {
+  var d = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  btn.previousElementSibling.value = pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function toggleCustomerType() {
+  var isNew = document.getElementById('ct-new').checked;
+  var existingBlock = document.getElementById('existing-patient-block');
+  var newBlock = document.getElementById('new-patient-block');
+  existingBlock.style.display = isNew ? 'none' : '';
+  if (newBlock) newBlock.style.display = isNew ? '' : 'none';
+  existingBlock.querySelector('[name=patient_id]').required = !isNew;
+}
+</script>
+<script src="{{ url_for('static', filename='patient_filter.js') }}"></script>
+{% endblock %}
