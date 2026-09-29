@@ -14,7 +14,7 @@
       </div>
       <div>
         <label>担当スタッフ</label>
-        <input type="text" name="staff" value="{{ visit.staff if visit else '' }}">
+        <input type="text" name="staff" value="{{ prefill.staff if prefill else '' }}">
       </div>
     </div>
 
@@ -22,7 +22,7 @@
     <div class="service-grid">
       {% for opt in base_service_options %}
         <input type="radio" class="chip-input" name="base_service" value="{{ opt }}" id="bs-{{ loop.index }}"
-          {% if visit and visit.base_service == opt %}checked{% endif %}>
+          {% if prefill and prefill.base_service == opt %}checked{% endif %}>
         <label class="chip" for="bs-{{ loop.index }}">{{ opt }}</label>
       {% endfor %}
     </div>
@@ -31,7 +31,7 @@
     <div class="service-grid">
       {% for opt in additional_service_options %}
         <input type="radio" class="chip-input" name="additional_service" value="{{ opt }}" id="as-{{ loop.index }}"
-          {% if visit and visit.additional_service == opt %}checked{% endif %}>
+          {% if prefill and prefill.additional_service == opt %}checked{% endif %}>
         <label class="chip" for="as-{{ loop.index }}">{{ opt }}</label>
       {% endfor %}
     </div>
@@ -40,45 +40,45 @@
     <div class="service-grid">
       {% for opt in ticket_options %}
         <input type="radio" class="chip-input" name="ticket" value="{{ opt }}" id="tk-{{ loop.index }}"
-          {% if visit and visit.ticket == opt %}checked{% endif %}>
+          {% if prefill and prefill.ticket == opt %}checked{% endif %}>
         <label class="chip" for="tk-{{ loop.index }}">{{ opt }}</label>
       {% endfor %}
     </div>
 
     <label>傷病名</label>
-    <input type="text" name="diagnosis" value="{{ visit.diagnosis if visit else '' }}">
+    <input type="text" name="diagnosis" value="{{ prefill.diagnosis if prefill else '' }}">
 
     <label>主訴1</label>
-    <input type="text" name="chief_complaint_1" value="{{ visit.chief_complaint_1 if visit else '' }}">
+    <input type="text" name="chief_complaint_1" value="{{ prefill.chief_complaint_1 if prefill else '' }}">
     <label>主訴2</label>
-    <input type="text" name="chief_complaint_2" value="{{ visit.chief_complaint_2 if visit else '' }}">
+    <input type="text" name="chief_complaint_2" value="{{ prefill.chief_complaint_2 if prefill else '' }}">
     <label>主訴3</label>
-    <input type="text" name="chief_complaint_3" value="{{ visit.chief_complaint_3 if visit else '' }}">
+    <input type="text" name="chief_complaint_3" value="{{ prefill.chief_complaint_3 if prefill else '' }}">
 
     <label>内容</label>
-    <textarea name="content">{{ visit.content if visit else '' }}</textarea>
+    <textarea name="content">{{ prefill.content if prefill else '' }}</textarea>
 
     <label>備考</label>
-    <textarea name="memo">{{ visit.memo if visit else '' }}</textarea>
+    <textarea name="memo">{{ prefill.memo if prefill else '' }}</textarea>
 
     <div class="field-row">
-      <div><label>11回数券利用</label><input type="text" name="ticket_use_11" value="{{ visit.ticket_use_11 or '' if visit else '' }}"></div>
-      <div><label>5回数券利用</label><input type="text" name="ticket_use_5" value="{{ visit.ticket_use_5 or '' if visit else '' }}"></div>
+      <div><label>11回数券利用</label><input type="text" name="ticket_use_11" value="{{ prefill.ticket_use_11 or '' if prefill else '' }}"></div>
+      <div><label>5回数券利用</label><input type="text" name="ticket_use_5" value="{{ prefill.ticket_use_5 or '' if prefill else '' }}"></div>
     </div>
 
-    {% set has_legacy = visit and (visit.treatment_memo or visit.pain_scale is not none or visit.disease_category or visit.custom_field_1 or visit.custom_field_2) %}
+    {% set has_legacy = prefill and (prefill.treatment_memo or prefill.pain_scale is not none or prefill.disease_category or prefill.custom_field_1 or prefill.custom_field_2) %}
     <details class="legacy-fields" {% if has_legacy %}open{% endif %}>
       <summary>bonboneの過去データ用の項目（施術メモ・ペインスケール等）</summary>
       <label>施術メモ</label>
-      <textarea name="treatment_memo">{{ visit.treatment_memo or '' if visit else '' }}</textarea>
+      <textarea name="treatment_memo">{{ prefill.treatment_memo or '' if prefill else '' }}</textarea>
       <label>ペインスケール（0〜10）</label>
-      <input type="number" name="pain_scale" min="0" max="10" value="{{ visit.pain_scale if visit and visit.pain_scale is not none else '' }}">
+      <input type="number" name="pain_scale" min="0" max="10" value="{{ prefill.pain_scale if prefill and prefill.pain_scale is not none else '' }}">
       <label>疾病分類</label>
-      <input type="text" name="disease_category" value="{{ visit.disease_category or '' if visit else '' }}">
+      <input type="text" name="disease_category" value="{{ prefill.disease_category or '' if prefill else '' }}">
       <label>オリジナル項目</label>
-      <textarea name="custom_field_1">{{ visit.custom_field_1 or '' if visit else '' }}</textarea>
+      <textarea name="custom_field_1">{{ prefill.custom_field_1 or '' if prefill else '' }}</textarea>
       <label>オリジナル項目2</label>
-      <textarea name="custom_field_2">{{ visit.custom_field_2 or '' if visit else '' }}</textarea>
+      <textarea name="custom_field_2">{{ prefill.custom_field_2 or '' if prefill else '' }}</textarea>
     </details>
 
     <div class="btn-row">
