@@ -45,6 +45,8 @@
         <div class="side-heading">設定</div>
         <a class="side-item {{ 'active' if ep in ('products', 'product_update') }}" href="{{ url_for('products') }}">
           <span class="side-icon icon-purple">{% include "icons/gear.svg" %}</span>商品・メニュー</a>
+        <a class="side-item {{ 'active' if ep == 'data_transfer' }}" href="{{ url_for('data_transfer') }}">
+          <span class="side-icon icon-purple">{% include "icons/ledger.svg" %}</span>データ取込・書出</a>
         <form method="post" action="{{ url_for('logout') }}" style="padding:6px 16px 0;">
           <button type="submit" class="back-link" style="background:none;border:none;padding:0;cursor:pointer;font-size:13.5px;">ログアウト</button>
         </form>

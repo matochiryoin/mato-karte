@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>データ取込・書出</h2>
+  <p style="font-size:13px;color:var(--text-mute);margin-top:0;">
+    患者 {{ patient_count }} 件・カルテ {{ visit_count }} 件。<br>
+    エクスポートしたCSVをExcelで編集してそのまま取り込めます（列の <code>id</code> が同じ行は上書き、無ければ新規登録）。
+  </p>
+</div>
+
+<div class="card">
+  <h2>書き出す（バックアップ・Excelで見る）</h2>
+  <div class="btn-row">
+    <a class="btn secondary" href="{{ url_for('data_export_patients') }}">患者CSVをダウンロード</a>
+    <a class="btn secondary" href="{{ url_for('data_export_visits') }}">カルテCSVをダウンロード</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>患者CSVを取り込む</h2>
+  <p style="font-size:13px;color:var(--text-mute);margin-top:0;">
+    列：id, chart_no, last_name, first_name, last_name_kana, first_name_kana, phone, mobile, email,
+    postal_code, prefecture, city, town, street, building, gender, marital_status, blood_type, occupation,
+    birth_date（YYYY-MM-DD）, memo, registered_date, first_visit_date, last_visit_date
+  </p>
+  <form method="post" action="{{ url_for('data_import_patients') }}" enctype="multipart/form-data" class="btn-row">
+    <input type="file" name="file" accept=".csv" required>
+    <button class="btn" type="submit">取り込む</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>カルテCSVを取り込む</h2>
+  <p style="font-size:13px;color:var(--text-mute);margin-top:0;">
+    列：id, patient_chart_no（既存の患者のカルテNo.）, visit_date（YYYY-MM-DD）, staff, base_service,
+    additional_service, ticket, diagnosis, chief_complaint_1, chief_complaint_2, chief_complaint_3, content,
+    memo, ticket_use_11, ticket_use_5
+  </p>
+  <form method="post" action="{{ url_for('data_import_visits') }}" enctype="multipart/form-data" class="btn-row">
+    <input type="file" name="file" accept=".csv" required>
+    <button class="btn" type="submit">取り込む</button>
+  </form>
+</div>
+{% endblock %}

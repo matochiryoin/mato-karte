@@ -10,6 +10,7 @@ from models import (db, Patient, Visit, Photo, BASE_SERVICE_OPTIONS, ADDITIONAL_
                     Reservation, ordered_products, fmt_min, STAFF_LIST, DAY_START_MIN, DAY_END_MIN, SLOT_MIN, SALES_TYPES,
                     StoreSchedule, StoreScheduleTemplate, CANCELLED_STATUSES)
 from sales import register as register_sales, seed_products
+from data_transfer import register as register_data_transfer
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # クラウドに置いたとき、ここ（永続ディスクのマウント先）をKARTE_DATA_DIRで指定する。
@@ -31,6 +32,7 @@ with app.app_context():
     seed_products()
 
 register_sales(app)
+register_data_transfer(app)
 
 # ---- ログイン（まことさん一人だけが使う想定の、共有パスワード1つの簡易ログイン） ----
 KARTE_PASSWORD = os.environ.get("KARTE_PASSWORD", "matochiryoin")
