@@ -34,6 +34,8 @@
       </div>
       <div class="side-section">
         <div class="side-heading">データ活用</div>
+        <a class="side-item {{ 'active' if ep == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+          <span class="side-icon icon-teal">{% include "icons/chart.svg" %}</span>ダッシュボード</a>
         <a class="side-item {{ 'active' if ep == 'report_monthly' }}" href="{{ url_for('report_monthly') }}">
           <span class="side-icon icon-teal">{% include "icons/chart.svg" %}</span>月間集計</a>
         <a class="side-item {{ 'active' if ep == 'report_menu' }}" href="{{ url_for('report_menu') }}">

@@ -373,3 +373,26 @@ def register(app):
             per_month[s.sale_date.month].append(s)
         rows = [(m, _sums(per_month.get(m, []))) for m in range(1, 13)]
         return render_template("report_yearly.html", year=year, rows=rows, totals=_sums(sales))
+
+    @app.route("/dashboard")
+    def dashboard():
+        """月別（売上／客数を切り替え）と年別の棒グラフ。客数は会計の件数。"""
+        this_year = date.today().year
+        year = request.args.get("year", type=int) or this_year
+        all_sales = Sale.query.all()
+        per_year_month = defaultdict(list)
+        for s in all_sales:
+            per_year_month[(s.sale_date.year, s.sale_date.month)].append(s)
+
+        monthly = []
+        for m in range(1, 13):
+            sums = _sums(per_year_month.get((year, m), []))
+            monthly.append(dict(label=f"{m}月", sales=sums["total"], count=sums["count"]))
+
+        first_year = min([y for y, _ in per_year_month] + [this_year])
+        yearly = []
+        for y in range(first_year, max(this_year, year) + 1):
+            sums = _sums([s for m in range(1, 13) for s in per_year_month.get((y, m), [])])
+            yearly.append(dict(label=f"{y}年", sales=sums["total"], count=sums["count"],
+                               unit=sums["total"] // sums["count"] if sums["count"] else 0))
+        return render_template("dashboard.html", year=year, monthly=monthly, yearly=yearly)

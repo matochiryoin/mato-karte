@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}ダッシュボード｜まと治療院 電子カルテ{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>ダッシュボード</h2>
+  <div class="tabs" id="metric-tabs" style="margin-bottom:0;">
+    <a href="#" class="active" data-metric="sales">売上</a>
+    <a href="#" data-metric="count">客数</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="day-nav" style="margin-bottom:6px;">
+    <a class="btn secondary" href="{{ url_for('dashboard', year=year - 1) }}">◀</a>
+    <div class="day-title" style="margin:0;flex:1;text-align:center;">{{ year }}年　月別<span id="metric-name-m"></span></div>
+    <a class="btn secondary" href="{{ url_for('dashboard', year=year + 1) }}">▶</a>
+  </div>
+  <div class="dash-bars" id="bars-monthly"></div>
+  <div class="table-wrap" style="margin-top:12px;">
+    <table class="ledger">
+      <thead><tr><th>月</th><th class="num">売上</th><th class="num">客数</th></tr></thead>
+      <tbody>
+        {% for r in monthly %}
+        <tr><td>{{ r.label }}</td><td class="num">{{ "{:,}".format(r.sales) }}</td><td class="num">{{ r.count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="day-title" style="margin:0 0 6px;">年別<span id="metric-name-y"></span></div>
+  <div class="dash-bars" id="bars-yearly"></div>
+  <div class="table-wrap" style="margin-top:12px;">
+    <table class="ledger">
+      <thead><tr><th>年</th><th class="num">売上</th><th class="num">客数</th><th class="num">客単価</th></tr></thead>
+      <tbody>
+        {% for r in yearly %}
+        <tr><td>{{ r.label }}</td><td class="num">{{ "{:,}".format(r.sales) }}</td><td class="num">{{ r.count }}</td><td class="num">{{ "{:,}".format(r.unit) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var MONTHLY = {{ monthly | tojson }};
+var YEARLY = {{ yearly | tojson }};
+var METRIC_NAME = { sales: '（売上）', count: '（客数）' };
+
+function compact(metric, n) {
+  if (metric === 'count') return String(n);
+  if (n >= 10000) return (Math.round(n / 1000) / 10).toString().replace(/\.0$/, '') + '万';
+  return n.toLocaleString('ja-JP');
+}
+
+function drawBars(elId, rows, metric) {
+  var el = document.getElementById(elId);
+  var max = Math.max.apply(null, rows.map(function (r) { return r[metric]; }).concat([1]));
+  el.innerHTML = rows.map(function (r) {
+    var h = Math.round(r[metric] / max * 170);
+    var full = metric === 'sales' ? r.sales.toLocaleString('ja-JP') + '円' : r.count + '人';
+    return '<div class="dash-col" title="' + r.label + ' ' + full + '">' +
+      '<div class="dash-val">' + (r[metric] ? compact(metric, r[metric]) : '') + '</div>' +
+      '<div class="dash-bar" style="height:' + h + 'px;"></div>' +
+      '<div class="dash-label">' + r.label.replace('月', '').replace('年', '') + '</div></div>';
+  }).join('');
+}
+
+function render(metric) {
+  document.querySelectorAll('#metric-tabs a').forEach(function (a) {
+    a.classList.toggle('active', a.dataset.metric === metric);
+  });
+  document.getElementById('metric-name-m').textContent = METRIC_NAME[metric];
+  document.getElementById('metric-name-y').textContent = METRIC_NAME[metric];
+  drawBars('bars-monthly', MONTHLY, metric);
+  drawBars('bars-yearly', YEARLY, metric);
+}
+
+document.querySelectorAll('#metric-tabs a').forEach(function (a) {
+  a.addEventListener('click', function (e) { e.preventDefault(); render(this.dataset.metric); });
+});
+render('sales');
+</script>
+{% endblock %}

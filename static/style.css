@@ -416,3 +416,10 @@ button.chip { font-family: inherit; }
 .service-grid .chip { width: 100%; box-sizing: border-box; text-align: center; border-radius: 8px; padding: 10px 8px; }
 
 .status.無断キャンセル { background: #f4e5e4; color: var(--danger); }
+
+/* dashboard */
+.dash-bars { display: flex; align-items: stretch; gap: 4px; height: 220px; padding-top: 6px; }
+.dash-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.dash-bar { width: 100%; max-width: 40px; background: var(--brand); border-radius: 4px 4px 0 0; min-height: 1px; }
+.dash-val { font-size: 10px; color: var(--text-mute); white-space: nowrap; margin-bottom: 2px; }
+.dash-label { font-size: 11px; color: var(--text-mute); margin-top: 4px; height: 14px; }
