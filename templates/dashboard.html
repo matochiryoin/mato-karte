@@ -3,19 +3,33 @@
 {% block content %}
 <div class="card">
   <h2>ダッシュボード</h2>
-  <div class="tabs" id="metric-tabs" style="margin-bottom:0;">
-    <a href="#" class="active" data-metric="sales">売上</a>
-    <a href="#" data-metric="count">客数</a>
+  <div class="dash-controls">
+    <div class="tabs" id="metric-tabs" style="margin-bottom:0;">
+      <a href="#" class="active" data-metric="sales">売上</a>
+      <a href="#" data-metric="count">客数</a>
+    </div>
+    <div class="tabs" id="type-tabs" style="margin-bottom:0;">
+      <a href="#" class="active" data-type="bar">棒グラフ</a>
+      <a href="#" data-type="line">折れ線</a>
+    </div>
   </div>
 </div>
 
 <div class="card">
   <div class="day-nav" style="margin-bottom:6px;">
     <a class="btn secondary" href="{{ url_for('dashboard', year=year - 1) }}">◀</a>
-    <div class="day-title" style="margin:0;flex:1;text-align:center;">{{ year }}年　月別<span id="metric-name-m"></span></div>
+    <div class="day-title" style="margin:0;flex:1;text-align:center;">{{ year }}年　月別<span class="metric-name"></span></div>
     <a class="btn secondary" href="{{ url_for('dashboard', year=year + 1) }}">▶</a>
   </div>
-  <div class="dash-bars" id="bars-monthly"></div>
+  <div style="font-size:12px;color:var(--text-mute);margin-bottom:4px;">比較する年（重ねて表示）</div>
+  <div class="chip-group" id="year-chips" style="margin-bottom:8px;">
+    {% for y in years_data %}
+      <input type="checkbox" class="chip-input" id="yr-{{ y }}" value="{{ y }}">
+      <label class="chip" for="yr-{{ y }}">{{ y }}年</label>
+    {% endfor %}
+  </div>
+  <div class="dash-legend" id="legend-monthly"></div>
+  <div id="chart-monthly"></div>
   <div class="table-wrap" style="margin-top:12px;">
     <table class="ledger">
       <thead><tr><th>月</th><th class="num">売上</th><th class="num">客数</th></tr></thead>
@@ -29,8 +43,8 @@
 </div>
 
 <div class="card">
-  <div class="day-title" style="margin:0 0 6px;">年別<span id="metric-name-y"></span></div>
-  <div class="dash-bars" id="bars-yearly"></div>
+  <div class="day-title" style="margin:0 0 6px;">年別<span class="metric-name"></span></div>
+  <div id="chart-yearly"></div>
   <div class="table-wrap" style="margin-top:12px;">
     <table class="ledger">
       <thead><tr><th>年</th><th class="num">売上</th><th class="num">客数</th><th class="num">客単価</th></tr></thead>
@@ -44,42 +58,125 @@
 </div>
 
 <script>
-var MONTHLY = {{ monthly | tojson }};
+var SELECTED_YEAR = "{{ year }}";
+var THIS_YEAR = "{{ today.year }}", THIS_MONTH = {{ today.month }};
+var YEARS = {{ years_data | tojson }};
 var YEARLY = {{ yearly | tojson }};
 var METRIC_NAME = { sales: '（売上）', count: '（客数）' };
+var COLORS = ['#1497a8', '#ef9245', '#7a8f8f', '#9b6fc4', '#d9534f', '#6aa84f'];
+var state = { metric: 'sales', type: 'bar', compare: [] };
+var SVG_NS = 'http://www.w3.org/2000/svg';
 
 function compact(metric, n) {
   if (metric === 'count') return String(n);
   if (n >= 10000) return (Math.round(n / 1000) / 10).toString().replace(/\.0$/, '') + '万';
   return n.toLocaleString('ja-JP');
 }
+function fullText(metric, n) { return metric === 'sales' ? n.toLocaleString('ja-JP') + '円' : n + '人'; }
 
-function drawBars(elId, rows, metric) {
-  var el = document.getElementById(elId);
-  var max = Math.max.apply(null, rows.map(function (r) { return r[metric]; }).concat([1]));
-  el.innerHTML = rows.map(function (r) {
-    var h = Math.round(r[metric] / max * 170);
-    var full = metric === 'sales' ? r.sales.toLocaleString('ja-JP') + '円' : r.count + '人';
-    return '<div class="dash-col" title="' + r.label + ' ' + full + '">' +
-      '<div class="dash-val">' + (r[metric] ? compact(metric, r[metric]) : '') + '</div>' +
-      '<div class="dash-bar" style="height:' + h + 'px;"></div>' +
-      '<div class="dash-label">' + r.label.replace('月', '').replace('年', '') + '</div></div>';
-  }).join('');
+function svgEl(name, attrs, text) {
+  var e = document.createElementNS(SVG_NS, name);
+  Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+  if (text !== undefined) e.textContent = text;
+  return e;
 }
 
-function render(metric) {
-  document.querySelectorAll('#metric-tabs a').forEach(function (a) {
-    a.classList.toggle('active', a.dataset.metric === metric);
+// series: [{name, color, values:[...]}]、labels: 横軸の目盛り
+function drawChart(containerId, labels, series, metric, type) {
+  var W = 360, H = 240, L = 40, R = 8, T = 14, B = 24;
+  var pw = W - L - R, ph = H - T - B;
+  var max = 1;
+  series.forEach(function (s) { s.values.forEach(function (v) { if (v > max) max = v; }); });
+  var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img' });
+  svg.style.color = 'var(--text-mute)';
+  for (var i = 0; i <= 4; i++) {
+    var y = T + ph - ph * i / 4;
+    svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: y, y2: y, stroke: 'currentColor', 'stroke-opacity': i ? 0.18 : 0.5 }));
+    svg.appendChild(svgEl('text', { x: L - 4, y: y + 3, 'text-anchor': 'end', 'font-size': 9, fill: 'currentColor' }, compact(metric, Math.round(max * i / 4))));
+  }
+  var n = labels.length, slot = pw / n;
+  labels.forEach(function (lb, i) {
+    svg.appendChild(svgEl('text', { x: L + slot * (i + 0.5), y: H - 8, 'text-anchor': 'middle', 'font-size': 10, fill: 'currentColor' }, lb));
   });
-  document.getElementById('metric-name-m').textContent = METRIC_NAME[metric];
-  document.getElementById('metric-name-y').textContent = METRIC_NAME[metric];
-  drawBars('bars-monthly', MONTHLY, metric);
-  drawBars('bars-yearly', YEARLY, metric);
+  if (type === 'bar') {
+    var groupW = Math.min(slot * 0.8, 36 * series.length), bw = groupW / series.length;
+    series.forEach(function (s, si) {
+      s.values.forEach(function (v, i) {
+        if (v === null) return;
+        var h = ph * v / max;
+        var x = L + slot * (i + 0.5) - groupW / 2 + bw * si;
+        var r = svgEl('rect', { x: x, y: T + ph - h, width: Math.max(bw - 1, 1), height: h, fill: s.color, rx: 2 });
+        r.appendChild(svgEl('title', {}, s.name + ' ' + labels[i] + ' ' + fullText(metric, v)));
+        svg.appendChild(r);
+        if (series.length === 1 && v) {
+          svg.appendChild(svgEl('text', { x: x + bw / 2, y: T + ph - h - 3, 'text-anchor': 'middle', 'font-size': 8, fill: 'currentColor' }, compact(metric, v)));
+        }
+      });
+    });
+  } else {
+    series.forEach(function (s) {
+      var run = [];
+      function flush() {
+        if (run.length > 1) svg.appendChild(svgEl('polyline', { points: run.map(function (p) { return p[0] + ',' + p[1]; }).join(' '), fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round' }));
+        run = [];
+      }
+      s.values.forEach(function (v, i) {
+        if (v === null) { flush(); return; }
+        run.push([L + slot * (i + 0.5), T + ph - ph * v / max]);
+      });
+      flush();
+      s.values.forEach(function (v, i) {
+        if (v === null) return;
+        var c = svgEl('circle', { cx: L + slot * (i + 0.5), cy: T + ph - ph * v / max, r: 3, fill: s.color });
+        c.appendChild(svgEl('title', {}, s.name + ' ' + labels[i] + ' ' + fullText(metric, v)));
+        svg.appendChild(c);
+      });
+    });
+  }
+  var box = document.getElementById(containerId);
+  box.innerHTML = '';
+  box.appendChild(svg);
+}
+
+function render() {
+  document.querySelectorAll('#metric-tabs a').forEach(function (a) { a.classList.toggle('active', a.dataset.metric === state.metric); });
+  document.querySelectorAll('#type-tabs a').forEach(function (a) { a.classList.toggle('active', a.dataset.type === state.type); });
+  document.querySelectorAll('.metric-name').forEach(function (e) { e.textContent = METRIC_NAME[state.metric]; });
+
+  var shown = state.compare.slice().sort(function (a, b) { return a === SELECTED_YEAR ? -1 : b === SELECTED_YEAR ? 1 : b - a; });
+  var monthSeries = shown.map(function (y, i) {
+    return { name: y + '年', color: COLORS[i % COLORS.length], values: YEARS[y].map(function (r, mi) { return (y === THIS_YEAR && mi + 1 > THIS_MONTH) ? null : r[state.metric]; }) };
+  });
+  var months = []; for (var m = 1; m <= 12; m++) months.push(String(m));
+  drawChart('chart-monthly', months, monthSeries, state.metric, state.type);
+  document.getElementById('legend-monthly').innerHTML = monthSeries.map(function (s) {
+    return '<span><i style="background:' + s.color + '"></i>' + s.name + '</span>';
+  }).join('');
+
+  drawChart('chart-yearly', YEARLY.map(function (r) { return r.label.replace('年', ''); }),
+    [{ name: state.metric === 'sales' ? '売上' : '客数', color: COLORS[0], values: YEARLY.map(function (r) { return r[state.metric]; }) }],
+    state.metric, state.type);
 }
 
 document.querySelectorAll('#metric-tabs a').forEach(function (a) {
-  a.addEventListener('click', function (e) { e.preventDefault(); render(this.dataset.metric); });
+  a.addEventListener('click', function (e) { e.preventDefault(); state.metric = this.dataset.metric; render(); });
 });
-render('sales');
+document.querySelectorAll('#type-tabs a').forEach(function (a) {
+  a.addEventListener('click', function (e) { e.preventDefault(); state.type = this.dataset.type; render(); });
+});
+
+var chips = document.querySelectorAll('#year-chips input');
+var prevYear = String(parseInt(SELECTED_YEAR, 10) - 1);
+chips.forEach(function (c) {
+  c.checked = c.value === SELECTED_YEAR || c.value === prevYear;
+  c.addEventListener('change', function () {
+    state.compare = Array.from(chips).filter(function (x) { return x.checked; }).map(function (x) { return x.value; });
+    if (!state.compare.length) { this.checked = true; state.compare = [this.value]; }
+    render();
+  });
+});
+state.compare = Array.from(chips).filter(function (x) { return x.checked; }).map(function (x) { return x.value; });
+if (!state.compare.length) state.compare = [SELECTED_YEAR];
+render();
 </script>
 {% endblock %}

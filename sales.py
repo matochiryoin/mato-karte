@@ -389,10 +389,17 @@ def register(app):
             sums = _sums(per_year_month.get((year, m), []))
             monthly.append(dict(label=f"{m}月", sales=sums["total"], count=sums["count"]))
 
-        first_year = min([y for y, _ in per_year_month] + [this_year])
+        first_year = min([y for y, _ in per_year_month] + [this_year, year])
         yearly = []
         for y in range(first_year, max(this_year, year) + 1):
             sums = _sums([s for m in range(1, 13) for s in per_year_month.get((y, m), [])])
             yearly.append(dict(label=f"{y}年", sales=sums["total"], count=sums["count"],
                                unit=sums["total"] // sums["count"] if sums["count"] else 0))
-        return render_template("dashboard.html", year=year, monthly=monthly, yearly=yearly)
+        years_data = {}
+        for y in range(first_year, max(this_year, year) + 1):
+            rows = []
+            for m in range(1, 13):
+                sums = _sums(per_year_month.get((y, m), []))
+                rows.append(dict(sales=sums["total"], count=sums["count"]))
+            years_data[str(y)] = rows
+        return render_template("dashboard.html", year=year, monthly=monthly, yearly=yearly, years_data=years_data, today=date.today())
