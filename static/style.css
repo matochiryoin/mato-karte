@@ -421,3 +421,9 @@ button.chip { font-family: inherit; }
 .dash-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .dash-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--text-mute); margin-bottom: 4px; }
 .dash-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+.pie-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.pie-title { font-size: 13px; font-weight: 600; color: var(--text-mute); margin-bottom: 6px; }
+.pie-legend { font-size: 13px; margin-top: 8px; }
+.pie-legend > div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.pie-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.pie-total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 6px !important; font-weight: 600; }

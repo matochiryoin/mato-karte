@@ -402,4 +402,16 @@ def register(app):
                 sums = _sums(per_year_month.get((y, m), []))
                 rows.append(dict(sales=sums["total"], count=sums["count"]))
             years_data[str(y)] = rows
-        return render_template("dashboard.html", year=year, monthly=monthly, yearly=yearly, years_data=years_data, today=date.today())
+        first = _parse_month(request.args.get("month"))
+        start, end = _month_range(first)
+        month_sales = [s for s in all_sales if start <= s.sale_date < end]
+        by_category = [("技術", sum(s.tech_total for s in month_sales)), ("回数券", sum(s.ticket_total for s in month_sales)),
+                       ("店販", sum(s.shop_total for s in month_sales))]
+        pay = defaultdict(int)
+        for s in month_sales:
+            for p in s.payments:
+                pay[p.method] += p.amount
+        by_payment = [(m, pay[m]) for m in PAYMENT_METHODS if pay[m]]
+        return render_template("dashboard.html", year=year, monthly=monthly, yearly=yearly, years_data=years_data,
+                               today=date.today(), first=first, prev_month=(start - timedelta(days=1)).replace(day=1),
+                               next_month=end, by_category=by_category, by_payment=by_payment)

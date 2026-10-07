@@ -17,9 +17,9 @@
 
 <div class="card">
   <div class="day-nav" style="margin-bottom:6px;">
-    <a class="btn secondary" href="{{ url_for('dashboard', year=year - 1) }}">◀</a>
+    <a class="btn secondary" href="{{ url_for('dashboard', year=year - 1, month=first.strftime('%Y-%m')) }}">◀</a>
     <div class="day-title" style="margin:0;flex:1;text-align:center;">{{ year }}年　月別<span class="metric-name"></span></div>
-    <a class="btn secondary" href="{{ url_for('dashboard', year=year + 1) }}">▶</a>
+    <a class="btn secondary" href="{{ url_for('dashboard', year=year + 1, month=first.strftime('%Y-%m')) }}">▶</a>
   </div>
   <div style="font-size:12px;color:var(--text-mute);margin-bottom:4px;">比較する年（重ねて表示）</div>
   <div class="chip-group" id="year-chips" style="margin-bottom:8px;">
@@ -54,6 +54,18 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="day-nav" style="margin-bottom:6px;">
+    <a class="btn secondary" href="{{ url_for('dashboard', year=year, month=prev_month.strftime('%Y-%m')) }}">◀</a>
+    <div class="day-title" style="margin:0;flex:1;text-align:center;">{{ first.year }}年{{ first.month }}月　店舗実績</div>
+    <a class="btn secondary" href="{{ url_for('dashboard', year=year, month=next_month.strftime('%Y-%m')) }}">▶</a>
+  </div>
+  <div class="pie-grid">
+    <div><div class="pie-title">売上の内訳</div><div id="pie-category"></div></div>
+    <div><div class="pie-title">入金方法の内訳</div><div id="pie-payment"></div></div>
   </div>
 </div>
 
@@ -178,5 +190,45 @@ chips.forEach(function (c) {
 state.compare = Array.from(chips).filter(function (x) { return x.checked; }).map(function (x) { return x.value; });
 if (!state.compare.length) state.compare = [SELECTED_YEAR];
 render();
+
+var PIE_CATEGORY = {{ by_category | tojson }};
+var PIE_PAYMENT = {{ by_payment | tojson }};
+
+function drawPie(containerId, items) {
+  var box = document.getElementById(containerId);
+  var total = items.reduce(function (a, it) { return a + it[1]; }, 0);
+  if (!total) { box.innerHTML = '<div class="empty">データがありません</div>'; return; }
+  var svg = svgEl('svg', { viewBox: '0 0 200 200', width: '100%', role: 'img' });
+  svg.style.maxWidth = '220px';
+  var cx = 100, cy = 100, r = 90, angle = -Math.PI / 2;
+  var shown = items.filter(function (it) { return it[1] > 0; });
+  shown.forEach(function (it) {
+    var idx = items.indexOf(it), color = COLORS[idx % COLORS.length];
+    var frac = it[1] / total, tip = it[0] + ' ' + it[1].toLocaleString('ja-JP') + '円（' + Math.round(frac * 1000) / 10 + '%）';
+    var shape;
+    if (frac >= 0.9999) {
+      shape = svgEl('circle', { cx: cx, cy: cy, r: r, fill: color });
+    } else {
+      var a2 = angle + frac * 2 * Math.PI;
+      var x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+      shape = svgEl('path', { d: 'M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + (frac > 0.5 ? 1 : 0) + ',1 ' + x2 + ',' + y2 + ' Z', fill: color, stroke: 'var(--card)', 'stroke-width': 1.5 });
+      angle = a2;
+    }
+    shape.appendChild(svgEl('title', {}, tip));
+    svg.appendChild(shape);
+  });
+  var legend = document.createElement('div');
+  legend.className = 'pie-legend';
+  legend.innerHTML = shown.map(function (it) {
+    var idx = items.indexOf(it);
+    return '<div><span><i style="background:' + COLORS[idx % COLORS.length] + '"></i>' + it[0] + '</span><span>' +
+      it[1].toLocaleString('ja-JP') + '円（' + Math.round(it[1] / total * 1000) / 10 + '%）</span></div>';
+  }).join('') + '<div class="pie-total"><span>合計</span><span>' + total.toLocaleString('ja-JP') + '円</span></div>';
+  box.innerHTML = '';
+  box.appendChild(svg);
+  box.appendChild(legend);
+}
+drawPie('pie-category', PIE_CATEGORY);
+drawPie('pie-payment', PIE_PAYMENT);
 </script>
 {% endblock %}
